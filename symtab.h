@@ -1,17 +1,37 @@
-
 #include <map>
 #include <string>
 
+#define KEY_MAX 100
+
+using namespace std;
+
+class Node {
+   string identifier, scope, type;
+   Node* next;
+public:
+   Node();
+   Node(string key, string value, string type);
+   void Node_print();
+
+friend class SymbolTable;
+}
+
+
 class SymbolTable
 {
+   map<int, *Node> symbolTable;
+   SymbolTable* last;
+   vector<SymbolTable*>* next;  
 public:
 
    void creat();
-   std::string lookup(const std::string s);
-   std::string insert(const std::string s);
+   string lookup(const string s);
+   string insert(const string s);
+   int hashf(string id);
    void dump();
+   void push();
+   void pop();
 
-private:
-
-   std::map<std::string, std::string> symbolTable;
 };
+typedef SymbolTable symtab;
+

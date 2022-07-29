@@ -1,3 +1,5 @@
+/*用途： 不需要讀多個檔案,以及避免編譯錯誤*/
+%option noyywrap
 
 digit       [0-9]
 letter      [a-zA-Z]
@@ -24,7 +26,7 @@ string      \"([^\"\n]|\"\")*\"
 int linenum = 1;
 char buf[MAX_LINE_LENG];
 char string_revise[MAX_LINE_LENG];
-SymbolTable symtab;
+//SymbolTable symtab;
 %}
 
 %%
@@ -34,7 +36,7 @@ SymbolTable symtab;
 
 \/\*([^*]|(\*+[^*/]))*\*+\/    {LIST;}
 
-
+".."     {token(DD);}
 ","     {token(',');}
 ":"     {token(':');}
 ";"     {token(';');}
@@ -98,7 +100,7 @@ SymbolTable symtab;
 
 true|false    {tokenString(BOOL, yytext);}
 
-{identifier}  {symtab.insert(yytext); tokenString(ID,yytext);}
+{identifier}  {/*symtab.insert(yytext);*/ tokenString(ID,yytext);}
 {string}      {
 		int idx = 0;           
 		for(int i=1; i<strlen(yytext)-1; i++){
@@ -149,11 +151,4 @@ true|false    {tokenString(BOOL, yytext);}
 
 %%
 
-int main(int argc, char **argv)
-{
-   yylex();
-   printf("--------------------------------SymbolTable Below\n");
-   symtab.dump();
-   exit(0);
    
-}

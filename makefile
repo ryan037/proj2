@@ -1,0 +1,24 @@
+
+
+
+compiler: lex.yy.o y.tab.o symtab.o 
+	g++ lex.yy.o y.tab.o  symtab.o 
+
+y.tab.cpp: parser.y
+	yacc -d -o y.tab.cpp  parser.y
+
+lex.yy.cpp: scanner.l
+	lex -o lex.yy.cpp  scanner.l
+
+y.tab.o: y.tab.cpp
+	g++ -c y.tab.cpp
+
+lex.yy.o: lex.yy.cpp
+	g++ -c lex.yy.cpp
+
+symtab.o: symtab.cpp symtab.h
+	g++ -c symtab.cpp
+
+.PHONY: clean #fake項目
+clean:
+	rm -f *.o

@@ -1,11 +1,14 @@
 %{
 #define Trace(t)        printf(t)
+#include <cstdio>
 #include <iostream>
-#include "lex.yy.c"
 #include "symtab.h"
+using namespace std;
+extern FILE *yyin;
+extern char *yytext;
 
-
-
+extern int yylex(void);
+static void  yyerror(const char *msg);
 %}
 
 /*
@@ -102,6 +105,7 @@ inside_function:   inside_function variable_choice  |
 		   };
 
 variable_choice: VAR ID ':' data_type '=' expression | 
+                 VAR ID ':' data_type  '['INTEGER']' |
 	         VAR ID ':' data_type                |
                  VAR ID '=' expression               |
                  VAR ID                             
@@ -217,15 +221,13 @@ data_type:        INT|FLOAT|BOOL|STRING|VOID;
 
                 
 %%
-#include "lex.yy.c"
 
-yyerror(msg)
-char *msg;
+void yyerror(const char *msg)
 {
-    fprintf(stderr, "%s\n", msg);
+
 }
 
-main()
+int main(int argc, char **argv)
 {
     /* open the source program file */
     if (argc != 2) {
@@ -235,7 +237,7 @@ main()
     yyin = fopen(argv[1], "r");         /* open input file */
 
     /* perform parsing */
-    if (yyparse() == 1)                 /* parsing */
-        yyerror("Parsing error !");     /* syntax error */
+    if (yyparse() == 1){}                 /* parsing */
+ //       yyerror("Parsing error !");     /* syntax error */
 }
 
