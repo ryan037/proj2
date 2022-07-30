@@ -11,7 +11,7 @@ extern int yylex(void);
 static void  yyerror(const char *msg);
 %}
 
-/*
+
 %union{
 	int int_dataType;
 	double double_dataType;
@@ -20,7 +20,6 @@ static void  yyerror(const char *msg);
 	Tuple_Identity* compound_dataType;
 	int dataType;
 }
-*/
 
 
 

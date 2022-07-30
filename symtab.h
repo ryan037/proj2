@@ -1,6 +1,6 @@
 #include <map>
 #include <string>
-
+#include <vector>
 #define KEY_MAX 100
 
 using namespace std;
@@ -10,28 +10,49 @@ class Node {
    Node* next;
 public:
    Node();
-   Node(string key, string value, string type);
+   Node(const string key, const string value, const  string type);
    void Node_print();
+   string getIdentifier();
+   string getType();
+   string getScope();
+   friend class SymbolTable;
 
-friend class SymbolTable;
-}
+};
 
 
 class SymbolTable
 {
-   map<int, *Node> symbolTable;
-   SymbolTable* last;
-   vector<SymbolTable*>* next;  
+   map<int, Node*> symbolTable;
+   SymbolTable* parent;
+   vector<SymbolTable*> childs;  
 public:
-
-   void creat();
-   string lookup(const string s);
-   string insert(const string s);
-   int hashf(string id);
+   SymbolTable();
+//---------------------------------------------- 
+   map<int, Node*>      getSymbolTable();
+   SymbolTable*         getParent();
+   vector<SymbolTable*> getChilds(); 
+   void setParent(SymbolTable* parent);
+//---------------------------------------------- 
+   SymbolTable* creat();
+   bool lookup(const string s);
+   bool insert(const string id, const string scope, const string type);
+   int hashf(const string id);
    void dump();
    void push();
    void pop();
-
 };
-typedef SymbolTable symtab;
+
+class Symtab_list : public SymbolTable
+{
+   SymbolTable* head;
+   SymbolTable* cur;
+   
+
+public:
+   void pop();
+   void push();
+   bool lookup_token(const string s);
+   bool insert_token(const string s);
+   void dump_all_symtab();
+};
 
