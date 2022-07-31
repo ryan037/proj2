@@ -36,6 +36,10 @@ string Node::getScope()
 {
    return this->scope;
 }
+Node* Node::getNext()
+{
+    return this->next;
+}
 
 //-------------------------------------------
 SymbolTable::SymbolTable()
@@ -72,11 +76,13 @@ bool SymbolTable::insert(const string id, const string scope, const string type)
    map<int, Node*>::iterator it = this->symbolTable.find(index);
 
    if(it == this->symbolTable.end()){
+
       this->symbolTable[index] = n;
       return true;
    }
    else{
       Node* start = this->symbolTable[index];
+
       while(start->next != NULL)
 	      start = start->next;
       start->next = n;
@@ -103,7 +109,10 @@ void SymbolTable::dump()
 void SymbolTable::dump(SymbolTable* s)
 {
    for(const auto& entry : s->symbolTable){
-      cout << entry.second->getIdentifier() << "  " << entry.second->getType() << "  " <<  entry.second->getScope() << endl;
+      while(entry.second != NULL){
+         cout << entry.second->getIdentifier() << "  " << entry.second->getType() << " " <<  entry.second->getScope() << endl;
+         entry.second = entry->second->getnext();
+      }
    }
 }
 
@@ -151,9 +160,7 @@ void Symtab_list::push()
    //如果是第一個symbol table
    if(this->head == NULL){
        this->head = creat();
-       cout << this->head->getChilds().size() << endl ;
        this->head->addChilds();
-       cout << this->head->getChilds().size() << endl ;
        this->cur = this->head->getChilds().front();
    }
    //曾做過的階層
@@ -199,7 +206,7 @@ void Symtab_list::dump_all()
             symtab_queue.push(symtab);
 	 }
       }
-      symtab_queue.pop();     
+      symtab_queue.pop();    
       dump(s);
    }
 }
