@@ -44,7 +44,6 @@ SymbolTable::SymbolTable()
 } 
 SymbolTable* SymbolTable::creat()
 {
-  cout << "creat\n";
   return new SymbolTable();
   
 }
@@ -90,7 +89,6 @@ bool SymbolTable::insert(const string id, const string scope, const string type)
 	cout << "Insert Successfully\n";
         return s;
    }
-
    else
 	cout << "Insert Failure\n";
 */
@@ -127,13 +125,18 @@ SymbolTable* SymbolTable::getParent()
 {
    return this->parent;
 }
+
+void SymbolTable::setParent(SymbolTable* parent)
+{
+   this->parent = parent;
+}
 vector<SymbolTable*> SymbolTable::getChilds()
 {
    return this->childs;
 }
-void SymbolTable::setParent(SymbolTable* parent)
+void SymbolTable::addChilds()
 {
-   this->parent = parent;
+   return this->childs.push_back(creat());
 }
 //-------------------------------------------
 
@@ -146,23 +149,22 @@ Symtab_list::Symtab_list()
 void Symtab_list::push()
 { 
    //如果是第一個symbol table
-   if(head == NULL){
-       head = creat();
+   if(this->head == NULL){
+       this->head = creat();
        cout << this->head->getChilds().size() << endl ;
-       this->head->getChilds().push_back(creat());
+       this->head->addChilds();
        cout << this->head->getChilds().size() << endl ;
        this->cur = this->head->getChilds().front();
-       cout << "push over\n";
    }
    //曾做過的階層
    else if(cur->getChilds().size() == 0){
-       this->cur->getChilds().push_back(creat()); 
+       this->cur->addChilds();
        this->cur->getChilds().back()->setParent(this->cur);
        this->cur = this->cur->getChilds().back();
    }
    //未做過得階層
    else{
-       this->cur->getChilds().push_back(creat());
+       this->cur->addChilds();
        this->cur->getChilds().front()->setParent(this->cur);
        this->cur = this->cur->getChilds().front();
    }
@@ -201,5 +203,3 @@ void Symtab_list::dump_all()
       dump(s);
    }
 }
-
-
