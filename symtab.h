@@ -10,7 +10,7 @@ class Node {
    Node* next;
 public:
    Node();
-   Node(const string key, const string value, const  string type);
+   Node(const string id, const string scope, const  string type);
    void Node_print();
    string getIdentifier();
    string getType();
@@ -34,10 +34,11 @@ public:
    void setParent(SymbolTable* parent);
 //---------------------------------------------- 
    SymbolTable* creat();
-   bool lookup(const string s);
+   bool lookup(const string id);
    bool insert(const string id, const string scope, const string type);
    int hashf(const string id);
    void dump();
+   void dump(SymbolTable* s);
    void push();
    void pop();
 };
@@ -47,12 +48,12 @@ class Symtab_list : public SymbolTable
    SymbolTable* head;
    SymbolTable* cur;
    
-
 public:
+   Symtab_list();
    void pop();
    void push();
-   bool lookup_token(const string s);
-   bool insert_token(const string s);
-   void dump_all_symtab();
+   bool lookup_token(const string id);
+   bool insert_token(const string id, const string scope, const string type);
+   void dump_all();
 };
 

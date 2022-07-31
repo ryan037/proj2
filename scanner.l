@@ -13,7 +13,8 @@ string      \"([^\"\n]|\"\")*\"
 %{
 
 #include "symtab.h"
-#include "y.tab.h"
+#include "y.tab.hpp"
+
 #define LIST     strcat(buf,yytext)
 
 #define token(t) {LIST; printf("<%s>\n", #t);  return(t);}                     
@@ -26,7 +27,6 @@ string      \"([^\"\n]|\"\")*\"
 int linenum = 1;
 char buf[MAX_LINE_LENG];
 char string_revise[MAX_LINE_LENG];
-//SymbolTable symtab;
 %}
 
 %%
@@ -95,10 +95,10 @@ char string_revise[MAX_LINE_LENG];
 
 
 
-{real}        {tokenFloat(REAL,yytext);}
-{integer}     {tokenInteger(INTEGER, yytext);}
+{real}        {tokenFloat(REAL_CONST,yytext);}
+{integer}     {tokenInteger(INT_CONST, yytext);}
 
-true|false    {tokenString(BOOL, yytext);}
+true|false    {tokenString(BOOL_CONST, yytext);}
 
 {identifier}  {/*symtab.insert(yytext);*/ tokenString(ID,yytext);}
 {string}      {
@@ -110,7 +110,7 @@ true|false    {tokenString(BOOL, yytext);}
    			string_revise[idx++] = yytext[i];
 		}
 			string_revise[idx] = '\0';
-			tokenString(STR, string_revise);
+			tokenString(STR_CONST, string_revise);
                         
               }
 

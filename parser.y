@@ -1,14 +1,18 @@
+
+/*
+%{..}%裡的東西只會include到y.tab.c, y.tab.h則沒有,所以union裡無法使用string
+*/
 %{
 #define Trace(t)        printf(t)
 #include <cstdio>
 #include <iostream>
 #include "symtab.h"
-using namespace std;
 extern FILE *yyin;
 extern char *yytext;
 
 extern int yylex(void);
 static void  yyerror(const char *msg);
+Symtab_list symtab_list;
 %}
 
 
@@ -16,8 +20,8 @@ static void  yyerror(const char *msg);
 	int int_dataType;
 	double double_dataType;
 	bool bool_dataType;
-	string *string_dataType;
-	Tuple_Identity* compound_dataType;
+	char* string_dataType;
+//	Tuple_Identity* compound_dataType;
 	int dataType;
 }
 
@@ -25,18 +29,18 @@ static void  yyerror(const char *msg);
 
 /* tokens */
 %token ADDEQ SUBEQ MULEQ DIVEQ EQ NEQ LEQ GEQ
-%token SEMI SEMICOLON ID ARROW INTEGER REAL STR DD
+%token SEMI SEMICOLON  ARROW DD
 %token BOOL BREAK CHAR CASE CLASS CONTINUE DECLARE DO ELSE EXIT FLOAT FOR FUN IF IN INT LOOP PRINT PRINTLN READ RETURN STRING VAL VAR VOID WHILE
 %type expression
 %type data_type
 
-/*
+
 %token <int_dataType> INT_CONST
 %token <double_dataType> REAL_CONST
 %token <bool_dataType> BOOL_CONST
 %token <string_dataType> STR_CONST
 %token <string_dataType> ID
-*/
+
 /*
 %type <compound_dataType> constant_values expression call_function logical_expression relational_expression bool_expression calculation_expression variable_choice_variation constant_choice_variation print_choice
 */
@@ -54,7 +58,10 @@ static void  yyerror(const char *msg);
 %%
 program:        CLASS ID '{' inside_class '}' 
                 {
+                   symtab_list.push();
+                   symtab_list.insert_token("main", "class", "fun");
                 	Trace("Reducing to program\n");
+                   symtab_list.pop();
                 };
                 
 
@@ -104,7 +111,7 @@ inside_function:   inside_function variable_choice  |
 		   };
 
 variable_choice: VAR ID ':' data_type '=' expression | 
-                 VAR ID ':' data_type  '['INTEGER']' |
+                 VAR ID ':' data_type  '['INT_CONST']' |
 	         VAR ID ':' data_type                |
                  VAR ID '=' expression               |
                  VAR ID                             
@@ -163,7 +170,7 @@ inside_block_conditional:    inside_block_conditional statement_choice |
                              };
 
 loop_statement:      WHILE '(' bool_expression  ')' block_or_simple_loop |
-	             FOR '(' ID IN INTEGER DD INTEGER ')' block_or_simple_loop                     {
+	             FOR '(' ID IN INT_CONST DD INT_CONST ')' block_or_simple_loop                     {
 			Trace("Reducing to loop_statement\n");
 		     };
 
@@ -211,7 +218,7 @@ logical_expression:  '!' expression | expression AND expression
 		  |  expression OR;
 
 
-constant_values:         INTEGER | REAL | BOOL | STR;
+constant_values:         INT_CONST | REAL_CONST | BOOL_CONST | STR_CONST;
 
 
 data_type:        INT|FLOAT|BOOL|STRING|VOID;
@@ -236,7 +243,8 @@ int main(int argc, char **argv)
     yyin = fopen(argv[1], "r");         /* open input file */
 
     /* perform parsing */
-    if (yyparse() == 1){}                 /* parsing */
+    if (yyparse() == 1){}                 /* parsing *a/
  //       yyerror("Parsing error !");     /* syntax error */
+    symtab_list.dump_all();
 }
 

@@ -1,5 +1,6 @@
 #include "symtab.h"
 #include <iostream>
+#include <queue>
 
 using namespace std;
 
@@ -8,10 +9,10 @@ Node::Node()
 	this->next = NULL;
 }
 
-Node::Node(const string key, const string value, const string type)
+Node::Node(const string id, const string scope, const string type)
 {
-	this->identifier = key;
-	this->scope = value;
+	this->identifier = id;
+	this->scope = scope;
 	this->type = type;
 	this->next = NULL;
 }
@@ -40,9 +41,10 @@ string Node::getScope()
 SymbolTable::SymbolTable()
 {
    this->parent = NULL;
-}
+} 
 SymbolTable* SymbolTable::creat()
 {
+  cout << "creat\n";
   return new SymbolTable();
   
 }
@@ -52,9 +54,9 @@ bool SymbolTable::lookup(const string id)
    int index = hashf(id);
    
    map<int, Node*>::iterator it;
-   it = symbolTable.find(index);
-   if(it != symbolTable.end()){
-      Node* n = symbolTable[index];	   
+   it = this->symbolTable.find(index);
+   if(it != this->symbolTable.end()){
+      Node* n = this->symbolTable[index];	   
       while(n != NULL){
          if(n->getIdentifier() == id)
             return true;
@@ -68,14 +70,14 @@ bool SymbolTable::insert(const string id, const string scope, const string type)
 {
    Node* n = new Node(id, scope, type); 
    int index = hashf(id);
-   map<int, Node*>::iterator it = symbolTable.find(index);
+   map<int, Node*>::iterator it = this->symbolTable.find(index);
 
-   if(it == symbolTable.end()){
-      symbolTable[index] = n;
+   if(it == this->symbolTable.end()){
+      this->symbolTable[index] = n;
       return true;
    }
    else{
-      Node* start = symbolTable[index];
+      Node* start = this->symbolTable[index];
       while(start->next != NULL)
 	      start = start->next;
       start->next = n;
@@ -96,10 +98,17 @@ bool SymbolTable::insert(const string id, const string scope, const string type)
 
 void SymbolTable::dump()
 {
-   for(const auto& entry : symbolTable){
-      cout << "index: " << entry.first << ", value: " << entry.second << endl;
+   for(const auto& entry : this->symbolTable){
+      cout << entry.second->getIdentifier() << "  " << entry.second->getType() << "  " <<  entry.second->getScope() << endl;
    }
 }
+void SymbolTable::dump(SymbolTable* s)
+{
+   for(const auto& entry : s->symbolTable){
+      cout << entry.second->getIdentifier() << "  " << entry.second->getType() << "  " <<  entry.second->getScope() << endl;
+   }
+}
+
 
 int SymbolTable::hashf(const string id)
 {
@@ -127,23 +136,34 @@ void SymbolTable::setParent(SymbolTable* parent)
    this->parent = parent;
 }
 //-------------------------------------------
+
+Symtab_list::Symtab_list()
+{
+   this->head = NULL;
+   this->cur  = NULL;
+}
+
 void Symtab_list::push()
 { 
    //如果是第一個symbol table
    if(head == NULL){
        head = creat();
+       cout << this->head->getChilds().size() << endl ;
        this->head->getChilds().push_back(creat());
-       this->setParent(NULL);
+       cout << this->head->getChilds().size() << endl ;
        this->cur = this->head->getChilds().front();
+       cout << "push over\n";
    }
    //曾做過的階層
    else if(cur->getChilds().size() == 0){
        this->cur->getChilds().push_back(creat()); 
+       this->cur->getChilds().back()->setParent(this->cur);
        this->cur = this->cur->getChilds().back();
    }
    //未做過得階層
    else{
        this->cur->getChilds().push_back(creat());
+       this->cur->getChilds().front()->setParent(this->cur);
        this->cur = this->cur->getChilds().front();
    }
    
@@ -152,3 +172,34 @@ void Symtab_list::pop()
 {
    this->cur = this->cur->getParent();
 }
+
+bool Symtab_list::lookup_token(const string id)
+{
+   return this->cur->lookup(id);
+}
+bool Symtab_list::insert_token(const string id, const string  scope, const string type)
+{
+   return this->cur->insert(id, scope, type);
+}
+void Symtab_list::dump_all()
+{
+   int count = 1;
+   queue<SymbolTable*> symtab_queue;
+   for(const auto& symtab : this->head->getChilds()){
+      symtab_queue.push(symtab);
+   }
+   cout << "Name " << "Type " << "Scope" << endl; 
+   while(!symtab_queue.empty()){
+      cout << "Symbol Table: "<< count  << "----------------------------" << endl;
+      SymbolTable* s = symtab_queue.front();
+      if(!s->getChilds().empty()){     
+         for(const auto& symtab : s->getChilds()){
+            symtab_queue.push(symtab);
+	 }
+      }
+      symtab_queue.pop();     
+      dump(s);
+   }
+}
+
+
