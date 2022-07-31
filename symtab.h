@@ -15,8 +15,9 @@ public:
    string getIdentifier();
    string getType();
    string getScope();
+   Node* getNext();
    friend class SymbolTable;
-
+   
 };
 
 
