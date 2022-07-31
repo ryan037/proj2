@@ -26,12 +26,14 @@ class SymbolTable
    SymbolTable* parent;
    vector<SymbolTable*> childs;  
 public:
+ 
    SymbolTable();
 //---------------------------------------------- 
    map<int, Node*>      getSymbolTable();
    SymbolTable*         getParent();
    vector<SymbolTable*> getChilds(); 
    void setParent(SymbolTable* parent);
+   void addChilds();
 //---------------------------------------------- 
    SymbolTable* creat();
    bool lookup(const string id);
@@ -56,4 +58,3 @@ public:
    bool insert_token(const string id, const string scope, const string type);
    void dump_all();
 };
-
