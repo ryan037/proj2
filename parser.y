@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <iostream>
 #include "symtab.h"
+
 extern FILE *yyin;
 extern char *yytext;
 
@@ -18,9 +19,7 @@ Symtab_list symtab_list;
 %}
 
 %code requires{
-   class Tuple_Identity{
-      
-   };
+   #include "symtab.h"
 }
 
 %union{
@@ -28,8 +27,8 @@ Symtab_list symtab_list;
 	double double_dataType;
 	bool bool_dataType;
 	char* string_dataType;
-	Tuple_Identity* compound_dataType;
-	int dataType;
+        Tuple_Identity* compound;
+        ValueType dataType;
 }
 
 
@@ -39,7 +38,7 @@ Symtab_list symtab_list;
 %token SEMI SEMICOLON  ARROW DD
 %token BOOL BREAK CHAR CASE CLASS CONTINUE DECLARE DO ELSE EXIT FLOAT FOR FUN IF IN INT LOOP PRINT PRINTLN READ RETURN STRING VAL VAR VOID WHILE
 %type expression
-%type data_type
+%type<dataType> data_type
 
 
 %token <int_dataType> INT_CONST
@@ -51,6 +50,7 @@ Symtab_list symtab_list;
 /*
 %type <compound_dataType> constant_values expression call_function logical_expression relational_expression bool_expression calculation_expression variable_choice_variation constant_choice_variation print_choice
 */
+
 
 %left OR
 %left AND
@@ -66,7 +66,7 @@ Symtab_list symtab_list;
 program:        CLASS ID
                 {
                    symtab_list.push();
-                   symtab_list.insert_token($2, "global", "class");
+                   symtab_list.insert_token($2, "global", type_class);
                 }
                '{' inside_class '}' 
                 {
@@ -85,9 +85,15 @@ inside_class:   inside_class function_choice  |
 		};
                 
 
-function_choice:   FUN ID function_variation '{' inside_function '}'
+function_choice:   FUN ID
+	           {
+			symtab_list.push();
+                        symtab_list.insert_token($2, "local", type_function);
+                   }
+	           function_variation '{' inside_function '}'
 	           {
 			Trace("Reducing to function_dcl\n");
+                        symtab_list.pop();
 		   };
 
 
@@ -108,6 +114,7 @@ mul_args:   mul_args ',' sgl_args | sgl_args
 
 sgl_args:   ID '|' data_type
 	    {
+                symtab_list.insert_token($1, "function parameter", $3);
 		Trace("Reducing to sgl_args\n");
             }; 
 
@@ -232,7 +239,11 @@ constant_values:         INT_CONST | REAL_CONST | BOOL_CONST | STR_CONST;
 	                
 
 
-data_type:        INT|FLOAT|BOOL|STRING|VOID;
+data_type:  INT    {$$ = type_integer;}
+         |  FLOAT  {$$ = type_real;}
+         |  BOOL   {$$ = type_bool;}
+         |  STRING {$$ = type_string;}
+         |  VOID   {$$ = type_void;};
 
 
 

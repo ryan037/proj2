@@ -9,7 +9,7 @@ Node::Node()
 	this->next = NULL;
 }
 
-Node::Node(const string id, const string scope, const string type)
+Node::Node(const string id, const string scope, ValueType type)
 {
 	this->identifier = id;
 	this->scope = scope;
@@ -28,7 +28,7 @@ string Node::getIdentifier()
 {
    return this->identifier;
 }
-string Node::getType()
+ValueType Node::getType()
 {
    return this->type;
 }
@@ -69,14 +69,13 @@ bool SymbolTable::lookup(const string id)
 
    return false;
 }
-bool SymbolTable::insert(const string id, const string scope, const string type)
+bool SymbolTable::insert(const string id, const string scope, ValueType type)
 {
    Node* n = new Node(id, scope, type); 
    int index = hashf(id);
    map<int, Node*>::iterator it = this->symbolTable.find(index);
 
    if(it == this->symbolTable.end()){
-
       this->symbolTable[index] = n;
       return true;
    }
@@ -200,7 +199,7 @@ bool Symtab_list::lookup_token(const string id)
 {
    return this->cur->lookup(id);
 }
-bool Symtab_list::insert_token(const string id, const string  scope, const string type)
+bool Symtab_list::insert_token(const string id, const string  scope, ValueType type)
 {
    return this->cur->insert(id, scope, type);
 }
