@@ -13,15 +13,22 @@ extern char *yytext;
 extern int yylex(void);
 static void  yyerror(const char *msg);
 Symtab_list symtab_list;
+
+
 %}
 
+%code requires{
+   class Tuple_Identity{
+      
+   };
+}
 
 %union{
 	int int_dataType;
 	double double_dataType;
 	bool bool_dataType;
 	char* string_dataType;
-//	Tuple_Identity* compound_dataType;
+	Tuple_Identity* compound_dataType;
 	int dataType;
 }
 
@@ -56,11 +63,14 @@ Symtab_list symtab_list;
 
 
 %%
-program:        CLASS ID '{' inside_class '}' 
+program:        CLASS ID
                 {
                    symtab_list.push();
-                   symtab_list.insert_token("main", "class", "fun");
-                	Trace("Reducing to program\n");
+                   symtab_list.insert_token($2, "global", "class");
+                }
+               '{' inside_class '}' 
+                {
+                   Trace("Reducing to program\n");
                    symtab_list.pop();
                 };
                 
@@ -110,10 +120,10 @@ inside_function:   inside_function variable_choice  |
 		 	Trace("Reducing to inside_function\n");
 		   };
 
-variable_choice: VAR ID ':' data_type '=' expression | 
+variable_choice: VAR ID ':' data_type '=' expression   | 
                  VAR ID ':' data_type  '['INT_CONST']' |
-	         VAR ID ':' data_type                |
-                 VAR ID '=' expression               |
+	         VAR ID ':' data_type                  |
+                 VAR ID '=' expression                 |
                  VAR ID                             
 	         {
 			Trace("Reducing to variable_choice\n");
@@ -219,6 +229,7 @@ logical_expression:  '!' expression | expression AND expression
 
 
 constant_values:         INT_CONST | REAL_CONST | BOOL_CONST | STR_CONST;
+	                
 
 
 data_type:        INT|FLOAT|BOOL|STRING|VOID;

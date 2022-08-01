@@ -19,8 +19,12 @@ string      \"([^\"\n]|\"\")*\"
 
 #define token(t) {LIST; printf("<%s>\n", #t);  return(t);}                     
 
-#define tokenInteger(t,i) {LIST; printf("<%s: %d>\n",#t,atoi(i)); return(t);}
-#define tokenFloat(t,i) {LIST; printf("<%s: %f>\n",#t,atof(i)); return(t);}
+#define tokenInteger(t,i) {LIST; printf("<%s: %d>\n",#t,atoi(i)); \
+                          yylval.int_dataType = atoi(i); return(t);}
+
+#define tokenFloat(t,i) {LIST; printf("<%s: %f>\n",#t,atof(i));     \
+                         yylval.double_dataType = atof(i); return(t);} 
+
 #define tokenString(t,s) {LIST; printf("<%s: %s>\n",#t,s); return(t);}
 #define MAX_LINE_LENG 256
 
@@ -98,10 +102,11 @@ char string_revise[MAX_LINE_LENG];
 {real}        {tokenFloat(REAL_CONST,yytext);}
 {integer}     {tokenInteger(INT_CONST, yytext);}
 
-true|false    {tokenString(BOOL_CONST, yytext);}
-
-{identifier}  {/*symtab.insert(yytext);*/ tokenString(ID,yytext);}
+"true"   {yylval.bool_dataType = true;   tokenString(BOOL_CONST, yytext);}
+"false"   {yylval.bool_dataType = false;  tokenString(BOOL_CONST, yytext);}
+{identifier}  {yylval.string_dataType = yytext;  tokenString(ID,yytext);}
 {string}      {
+                yylval.string_dataType = yytext;
 		int idx = 0;           
 		for(int i=1; i<strlen(yytext)-1; i++){
    			if(yytext[i]=='"' && yytext[i+1] == '"'){
