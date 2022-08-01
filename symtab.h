@@ -42,8 +42,6 @@ public:
    int hashf(const string id);
    void dump();
    void dump(SymbolTable* s);
-   void push();
-   void pop();
 };
 
 class Symtab_list : public SymbolTable
