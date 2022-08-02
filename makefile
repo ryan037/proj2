@@ -2,10 +2,10 @@ compiler:  y.tab.o lex.yy.o  symtab.o
 	g++ lex.yy.o y.tab.o  symtab.o 
 
 y.tab.cpp: parser.y
-	yacc -d -o y.tab.cpp  parser.y
+	bison -d -o y.tab.cpp  parser.y
 
 lex.yy.cpp: scanner.l
-	lex -o lex.yy.cpp  scanner.l
+	flex -o lex.yy.cpp  scanner.l
 
 y.tab.o: y.tab.cpp
 	g++ -c y.tab.cpp
