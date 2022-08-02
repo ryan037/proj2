@@ -16,9 +16,7 @@ string      \"([^\"\n]|\"\")*\"
                           yylval.int_dataType = atoi(i); return(t);}
 #define tokenFloat(t,i) {LIST; printf("<%s: %f>\n",#t,atof(i));     \
                          yylval.double_dataType = atof(i); return(t);} 
-
 #define tokenString(t,s) {LIST; printf("<%s: %s>\n",#t,s); return(t);} 
-
 #define MAX_LINE_LENG 256
 int linenum = 1;
 char buf[MAX_LINE_LENG];
@@ -93,7 +91,7 @@ char string_revise[MAX_LINE_LENG];
 
 "true"   {yylval.bool_dataType = true;   tokenString(BOOL_CONST, yytext);}
 "false"   {yylval.bool_dataType = false;  tokenString(BOOL_CONST, yytext);}
-{identifier}  {yylval.string_dataType = yytext; tokenString(ID,yytext);}
+{identifier}  {yylval.string_dataType = strdup(yytext); tokenString(ID,yytext);}
 {string}      {
                 yylval.string_dataType = yytext;
 		int idx = 0;           

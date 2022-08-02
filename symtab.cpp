@@ -225,7 +225,7 @@ void Symtab_list::dump_all()
       if(!s->getChilds().empty()){     
          for(const auto& symtab : s->getChilds()){
             symtab_queue.push(symtab);
-	     }
+	 }
       }
       symtab_queue.pop();    
       dump(s);

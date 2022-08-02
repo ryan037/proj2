@@ -68,10 +68,12 @@ program:        CLASS ID
                    Tuple_Identity *data = new Tuple_Identity($2, "global", type_class);
                    symtab_list.push();
                    symtab_list.insert_token($2, data);
+                   symtab_list.push();
                 }
                '{' inside_class '}' 
                 {
                    Trace("Reducing to program\n");
+                   symtab_list.pop();
                    symtab_list.pop();
                 };
                 
@@ -89,11 +91,13 @@ inside_class:   inside_class function_choice  |
 function_choice:   FUN ID
 	           {
                         Tuple_Identity *data = new Tuple_Identity($2, "local", type_function);
-			symtab_list.push();
+			
                         symtab_list.insert_token($2, data);
+			
                    }
 	           function_variation
                    {
+                        symtab_list.push();
                    }
                    '{' inside_function '}'
 	           {
@@ -189,13 +193,28 @@ print_choice:        '(' expression ')' | expression
 		     };
 
 
-conditional_statement:  IF '(' bool_expression ')' block_or_simple_conditional
+conditional_statement:  IF '(' bool_expression ')'
+		        {
+                           symtab_list.push();
+                        }
+                        block_or_simple_conditional
+                        {
+                           symtab_list.pop();
+                        }
 		        else_choice
 		        {
                             Trace("Reducing to conditional_statement\n");		               };
 
 
-else_choice:         ELSE block_or_simple_conditional | 
+else_choice:         ELSE
+	             {
+                         symtab_list.push();
+                     }
+	             block_or_simple_conditional
+                     {
+                         symtab_list.pop();
+                     }
+                     | 
 	             {
 			Trace("Reducing to conditional_statement\n");
 		     };
@@ -212,8 +231,23 @@ inside_block_conditional:    inside_block_conditional statement_choice |
                              Trace("Reducing to inside_block_conditional\n");
                              };
 
-loop_statement:      WHILE '(' bool_expression  ')' block_or_simple_loop |
-	             FOR '(' ID IN INT_CONST DD INT_CONST ')' block_or_simple_loop                     {
+loop_statement:      WHILE '(' bool_expression  ')'
+	             {
+                       symtab_list.push();
+                     }
+                     block_or_simple_loop 
+                     {
+                       symtab_list.pop();
+                     }
+                   | FOR '(' ID IN INT_CONST DD INT_CONST ')'
+                     {
+                         Tuple_Identity *data = new Tuple_Identity($3, "function argument", type_integer);
+                         symtab_list.insert_token($3, data);
+                         symtab_list.push();
+                     }
+                     block_or_simple_loop                    
+                     {
+                        symtab_list.pop();
 			Trace("Reducing to loop_statement\n");
 		     };
 
