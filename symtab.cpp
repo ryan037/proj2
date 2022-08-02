@@ -4,6 +4,14 @@
 
 using namespace std;
 
+Tuple_Identity::Tuple_Identity()
+{}
+Tuple_Identity::Tuple_Identity(const string id, const string scope, ValueType type)
+{
+	this->id = id;
+	this->scope = scope;
+	this->type = type;
+}
 Node::Node()
 {
 	this->next = NULL;
@@ -199,9 +207,9 @@ bool Symtab_list::lookup_token(const string id)
 {
    return this->cur->lookup(id);
 }
-bool Symtab_list::insert_token(const string id, const string  scope, ValueType type)
+bool Symtab_list::insert_token(const string id, Tuple_Identity* ti)
 {
-   return this->cur->insert(id, scope, type);
+   return this->cur->insert(id, ti->scope, ti->type);
 }
 void Symtab_list::dump_all()
 {

@@ -16,6 +16,9 @@ class Tuple_Identity
 public:
    string id,scope;
    ValueType type;
+   Tuple_Identity();
+   Tuple_Identity(const string id, const string scope, ValueType type);
+
 };
 
 
@@ -69,7 +72,7 @@ public:
    void pop();
    void push();
    bool lookup_token(const string id);
-   bool insert_token(const string id, const string scope, ValueType type);
+   bool insert_token(const string id,  Tuple_Identity* ti);
    void dump_all();
 };
 

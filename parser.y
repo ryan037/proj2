@@ -1,4 +1,3 @@
-
 /*
 %{..}%裡的東西只會include到y.tab.c, y.tab.h則沒有,所以union裡無法使用string
 */
@@ -19,6 +18,7 @@ Symtab_list symtab_list;
 %}
 
 %code requires{
+   #include<string>
    #include "symtab.h"
 }
 
@@ -47,9 +47,9 @@ Symtab_list symtab_list;
 %token <string_dataType> STR_CONST
 %token <string_dataType> ID
 
-/*
-%type <compound_dataType> constant_values expression call_function logical_expression relational_expression bool_expression calculation_expression variable_choice_variation constant_choice_variation print_choice
-*/
+
+%type <compound_dataType> constant_values expression call_function logical_expression relational_expression bool_expression calculation_expression variable_choice constant_choice print_choice
+
 
 
 %left OR
@@ -65,8 +65,9 @@ Symtab_list symtab_list;
 %%
 program:        CLASS ID
                 {
+                   Tuple_Identity *data = new Tuple_Identity($2, "global", type_class);
                    symtab_list.push();
-                   symtab_list.insert_token($2, "global", type_class);
+                   symtab_list.insert_token($2, data);
                 }
                '{' inside_class '}' 
                 {
@@ -87,10 +88,14 @@ inside_class:   inside_class function_choice  |
 
 function_choice:   FUN ID
 	           {
+                        Tuple_Identity *data = new Tuple_Identity($2, "local", type_function);
 			symtab_list.push();
-                        symtab_list.insert_token($2, "local", type_function);
+                        symtab_list.insert_token($2, data);
                    }
-	           function_variation '{' inside_function '}'
+	           function_variation
+                   {
+                   }
+                   '{' inside_function '}'
 	           {
 			Trace("Reducing to function_dcl\n");
                         symtab_list.pop();
@@ -112,9 +117,10 @@ mul_args:   mul_args ',' sgl_args | sgl_args
             };	
 
 
-sgl_args:   ID '|' data_type
+sgl_args:   ID ':' data_type
 	    {
-                symtab_list.insert_token($1, "function parameter", $3);
+                Tuple_Identity *data = new Tuple_Identity($1, "function parameter", $3);
+                symtab_list.insert_token($1, data);
 		Trace("Reducing to sgl_args\n");
             }; 
 
@@ -127,20 +133,40 @@ inside_function:   inside_function variable_choice  |
 		 	Trace("Reducing to inside_function\n");
 		   };
 
-variable_choice: VAR ID ':' data_type '=' expression   | 
-                 VAR ID ':' data_type  '['INT_CONST']' |
-	         VAR ID ':' data_type                  |
-                 VAR ID '=' expression                 |
-                 VAR ID                             
+variable_choice: VAR ID ':' data_type '=' expression  
 	         {
-			Trace("Reducing to variable_choice\n");
+                     Tuple_Identity *data = new Tuple_Identity($2, "local", $4);
+                     symtab_list.insert_token($2, data);
+                 }
+                 | VAR ID ':' data_type  '['INT_CONST']'
+                 | VAR ID ':' data_type          
+                 {
+                     Tuple_Identity *data = new Tuple_Identity($2, "local", $4);
+                     symtab_list.insert_token($2, data);
+                 }
+	         | VAR ID '=' expression 
+                 {
+                     Tuple_Identity *data = new Tuple_Identity($2, "local", type_void);
+                     symtab_list.insert_token($2, data);
+                 }
+		 | VAR ID                             
+	         {
+                     Tuple_Identity *data = new Tuple_Identity($2, "local", type_void);
+                     symtab_list.insert_token($2, data);
+		     Trace("Reducing to variable_choice\n");
 		 };
 
 
-constant_choice:   VAL ID ':' data_type '=' expression | 
-	           VAL ID '=' expression  
+constant_choice:   VAL ID ':' data_type '=' expression
 	           {
-			Trace("Reducing to constant_choice\n");
+                     Tuple_Identity *data = new Tuple_Identity($2, "local", $4);
+                     symtab_list.insert_token($2, data);
+                   }
+                 | VAL ID '=' expression  
+	           {
+                     Tuple_Identity *data = new Tuple_Identity($2, "local", type_void);
+                     symtab_list.insert_token($2, data);
+	             Trace("Reducing to constant_choice\n");
 	           }; 
 
 
@@ -269,4 +295,3 @@ int main(int argc, char **argv)
  //       yyerror("Parsing error !");     /* syntax error */
     symtab_list.dump_all();
 }
-

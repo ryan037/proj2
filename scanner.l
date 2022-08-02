@@ -7,35 +7,24 @@ integer     [+-]?(0|[1-9]){digit}*
 real        [+-]?(0|[1-9]){digit}*\.{digit}+([eE][-+]?{digit}+)?
 identifier  {letter}+({letter}|{digit}|_)*
 string      \"([^\"\n]|\"\")*\"
-
-
-
 %{
-
 #include "symtab.h"
 #include "y.tab.hpp"
-
 #define LIST     strcat(buf,yytext)
-
 #define token(t) {LIST; printf("<%s>\n", #t);  return(t);}                     
-
 #define tokenInteger(t,i) {LIST; printf("<%s: %d>\n",#t,atoi(i)); \
                           yylval.int_dataType = atoi(i); return(t);}
-
 #define tokenFloat(t,i) {LIST; printf("<%s: %f>\n",#t,atof(i));     \
                          yylval.double_dataType = atof(i); return(t);} 
 
-#define tokenString(t,s) {LIST; printf("<%s: %s>\n",#t,s); return(t);}
-#define MAX_LINE_LENG 256
+#define tokenString(t,s) {LIST; printf("<%s: %s>\n",#t,s); return(t);} 
 
+#define MAX_LINE_LENG 256
 int linenum = 1;
 char buf[MAX_LINE_LENG];
 char string_revise[MAX_LINE_LENG];
 %}
-
 %%
-
-
 "//".*    {LIST;}
 
 \/\*([^*]|(\*+[^*/]))*\*+\/    {LIST;}
@@ -104,7 +93,7 @@ char string_revise[MAX_LINE_LENG];
 
 "true"   {yylval.bool_dataType = true;   tokenString(BOOL_CONST, yytext);}
 "false"   {yylval.bool_dataType = false;  tokenString(BOOL_CONST, yytext);}
-{identifier}  {yylval.string_dataType = yytext;  tokenString(ID,yytext);}
+{identifier}  {yylval.string_dataType = yytext; tokenString(ID,yytext);}
 {string}      {
                 yylval.string_dataType = yytext;
 		int idx = 0;           
@@ -155,5 +144,3 @@ char string_revise[MAX_LINE_LENG];
 
 
 %%
-
-   

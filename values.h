@@ -81,7 +81,6 @@ enum OperatorType
     ArrayLoad = 60,
     ArrayStore = 61,
 };
-
 inline std::string EnumToString(const ValueType value)
 {
     switch (value)
@@ -102,7 +101,6 @@ inline std::string EnumToString(const ValueType value)
         return std::to_string(value);
     }
 }
-
 inline std::string EnumToString(const EntryType value)
 {
     switch (value)
@@ -119,7 +117,6 @@ inline std::string EnumToString(const EntryType value)
         return std::to_string(value);
     }
 }
-
 inline std::string EnumToString(const OperatorType value)
 {
     switch (value)
@@ -142,7 +139,6 @@ inline std::string EnumToString(const OperatorType value)
         return "Return";
     case OperatorType::Assign:
         return "Assign";
-
     case OperatorType::Add:
         return "Add";
     case OperatorType::Minus:
@@ -155,7 +151,6 @@ inline std::string EnumToString(const OperatorType value)
         return "Reminder";
     case OperatorType::Negative:
         return "Negative";
-
     case OperatorType::LessThen:
         return "LessThen";
     case OperatorType::LessEqualThen:
@@ -168,14 +163,12 @@ inline std::string EnumToString(const OperatorType value)
         return "Equal";
     case OperatorType::NotEqual:
         return "NotEqual";
-
     case OperatorType::LogicalAnd:
         return "LogicalAnd";
     case OperatorType::LogicalOr:
         return "LogicalOr";
     case OperatorType::LogicalNot:
         return "LogicalNot";
-
     case OperatorType::If:
         return "If";
     case OperatorType::ElseIf:
@@ -192,23 +185,19 @@ inline std::string EnumToString(const OperatorType value)
         return "Continue";
     case OperatorType::Exit:
         return "Exit";
-
     case OperatorType::Read:
         return "Read";
     case OperatorType::Print:
         return "Print";
     case OperatorType::PrintLine:
         return "PrintLine ";
-
     case OperatorType::ArrayLoad:
         return "ArrayLoad";
     case OperatorType::ArrayStore:
         return "ArrayStore";
-
     default:
         return std::to_string(value);
     }
 }
-
 */
 #endif
