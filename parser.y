@@ -15,6 +15,7 @@ static void  yyerror(const char *msg);
 Symtab_list symtab_list;
 
 
+        int flag_inout = 1;
 %}
 
 %code requires{
@@ -65,6 +66,7 @@ Symtab_list symtab_list;
 %%
 program:        CLASS ID
                 {
+                   
                    Tuple_Identity *data = new Tuple_Identity($2, "global", type_class);
                    symtab_list.push();
                    symtab_list.insert_token($2, data);
@@ -78,12 +80,21 @@ program:        CLASS ID
                 };
                 
 
-inside_class:   inside_class function_choice  |
-	        inside_class variable_choice  |
-	        inside_class constant_choice  |
-	        inside_class statement_choice | 
-                
+inside_class:   inside_class function_choice
+	        {
+                } 
+              | inside_class variable_choice
+                {
+                }
+              |	inside_class constant_choice 
+                {
+                }
+              |	inside_class statement_choice
+                {
+                } 
+              | 
         	{
+                         
 			Trace("Reducing to inside_class\n");
 		};
                 
@@ -91,7 +102,6 @@ inside_class:   inside_class function_choice  |
 function_choice:   FUN ID
 	           {
                         Tuple_Identity *data = new Tuple_Identity($2, "local", type_function);
-			
                         symtab_list.insert_token($2, data);
 			
                    }
@@ -101,7 +111,7 @@ function_choice:   FUN ID
                    }
                    '{' inside_function '}'
 	           {
-			Trace("Reducing to function_dcl\n");
+			Trace("Reducing to function\n");
                         symtab_list.pop();
 		   };
 
@@ -143,6 +153,11 @@ variable_choice: VAR ID ':' data_type '=' expression
                      symtab_list.insert_token($2, data);
                  }
                  | VAR ID ':' data_type  '['INT_CONST']'
+                 {
+                     Tuple_Identity *data = new Tuple_Identity($2, "local", $4);
+                     symtab_list.insert_token($2, data);
+
+}
                  | VAR ID ':' data_type          
                  {
                      Tuple_Identity *data = new Tuple_Identity($2, "local", $4);
@@ -176,6 +191,7 @@ constant_choice:   VAL ID ':' data_type '=' expression
 
 
 statement_choice:    simple_statement | conditional_statement | loop_statement
+		     
 		     {
                         Trace("Reducing to statement_choice\n");
                      };
@@ -195,6 +211,7 @@ print_choice:        '(' expression ')' | expression
 
 conditional_statement:  IF '(' bool_expression ')'
 		        {
+                           cout << "error\n";
                            symtab_list.push();
                         }
                         block_or_simple_conditional
@@ -220,13 +237,13 @@ else_choice:         ELSE
 		     };
 
 
-block_or_simple_conditional: '{'inside_block_conditional'}' | statement_choice
+block_or_simple_conditional: '{' inside_block_conditional '}' | statement_choice
                              {
                            Trace("Reducing to block_or_simple_condidtional\n");
                              };
 
 
-inside_block_conditional:    inside_block_conditional statement_choice | 
+inside_block_conditional:    inside_block_conditional statement_choice |                                    inside_block_conditional constant_choice  |		                           inside_block_conditional variable_choice  | 
 			     {
                              Trace("Reducing to inside_block_conditional\n");
                              };
@@ -260,6 +277,8 @@ block_or_simple_loop: '{' inside_block_loop  '}' | statement_choice |
 
 
 inside_block_loop:  inside_block_loop statement_choice |
+                    inside_block_loop variable_choice  |
+                    inside_block_loop constant_choice  |
 	       	    inside_block_loop BREAK            | 
 	       	    inside_block_loop CONTINUE         |
                     {Trace("Reducing to inside_block_loop\n");};
@@ -279,7 +298,7 @@ call_function_parameter: expression;
 
 
 expression: call_function | ID | '(' expression  ')' | calculation_expression
-	  | bool_expression | constant_values
+	  | bool_expression | constant_values | ID '[' INT_CONST ']'
           {Trace("Reducing to expression\n");};
 
 calculation_expression: '-' expression %prec UMINUS | expression '*' expression                      | expression '/' expression | expression '%' expression                        | expression '+' expression | expression '-' expression                      {Trace("Reducing to calculation\n");};
@@ -325,7 +344,8 @@ int main(int argc, char **argv)
     yyin = fopen(argv[1], "r");         /* open input file */
 
     /* perform parsing */
-    if (yyparse() == 1){}                 /* parsing *a/
- //       yyerror("Parsing error !");     /* syntax error */
+    if (yyparse() == 1){                
+        yyerror("Parsing error !");
+    }
     symtab_list.dump_all();
 }

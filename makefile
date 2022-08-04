@@ -1,3 +1,6 @@
+
+
+
 compiler:  y.tab.o lex.yy.o  symtab.o 
 	g++ lex.yy.o y.tab.o  symtab.o 
 

@@ -73,6 +73,7 @@ char string_revise[MAX_LINE_LENG];
 "float"  {token(FLOAT);}
 "for"  {token(FOR);}
 "fun"  {token(FUN);}
+"in"  {token(IN);}
 "if"  {token(IF);}
 "int"  {token(INT);}
 "loop"  {token(LOOP);}
@@ -93,7 +94,7 @@ char string_revise[MAX_LINE_LENG];
 "false"   {yylval.bool_dataType = false;  tokenString(BOOL_CONST, yytext);}
 {identifier}  {yylval.string_dataType = strdup(yytext); tokenString(ID,yytext);}
 {string}      {
-                yylval.string_dataType = yytext;
+                yylval.string_dataType = strdup(yytext);
 		int idx = 0;           
 		for(int i=1; i<strlen(yytext)-1; i++){
    			if(yytext[i]=='"' && yytext[i+1] == '"'){

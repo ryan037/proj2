@@ -122,7 +122,8 @@ void SymbolTable::dump(SymbolTable* s)
    for(const auto& entry : s->symbolTable){
       Node* temp = entry.second;
       while(temp != NULL){
-         cout << temp->getIdentifier() << " " << temp->getType() << " " <<  temp->getScope() << endl;
+   printf("%-20s%-20d%-20s\n", temp->getIdentifier().c_str(), temp->getType(), temp->getScope().c_str());
+         //cout << temp->getIdentifier() << " " << temp->getType() << " " <<  temp->getScope() << endl;
          temp = temp->getNext();
       }
    }
@@ -218,9 +219,10 @@ void Symtab_list::dump_all()
    for(const auto& symtab : this->head->getChilds()){
       symtab_queue.push(symtab);
    }
-   cout << "Name " << "Type " << "Scope" << endl; 
+   cout << "--------------------------------------------------\n";
+   printf("%-20s%-20s%-20s\n", "Name", "Type", "Scope");
    while(!symtab_queue.empty()){
-      cout << "Symbol Table: "<< count++  << "----------------------------" << endl;
+      cout << "Symbol Table: "<< count++  << "-----------------------------------" << endl;
       SymbolTable* s = symtab_queue.front();
       if(!s->getChilds().empty()){     
          for(const auto& symtab : s->getChilds()){
