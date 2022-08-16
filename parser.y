@@ -15,7 +15,8 @@ static void  yyerror(const char *msg);
 Symtab_list symtab_list;
 
 
-        int flag_inout = 1;
+int if_else = 0;
+int ret = 0;
 %}
 
 %code requires{
@@ -28,7 +29,7 @@ Symtab_list symtab_list;
 	double double_dataType;
 	bool bool_dataType;
 	char* string_dataType;
-        Tuple_Identity* compound;
+        Node* compound_dataType;
         ValueType dataType;
 }
 
@@ -37,7 +38,7 @@ Symtab_list symtab_list;
 /* tokens */
 %token ADDEQ SUBEQ MULEQ DIVEQ EQ NEQ LEQ GEQ
 %token SEMI SEMICOLON  ARROW DD
-%token BOOL BREAK CHAR CASE CLASS CONTINUE DECLARE DO ELSE EXIT FLOAT FOR FUN IF IN INT LOOP PRINT PRINTLN READ RETURN STRING VAL VAR VOID WHILE
+%token BOOL BREAK CHAR CASE CLASS CONTINUE DO ELSE EXIT FLOAT FOR FUN IF IN INT LOOP PRINT PRINTLN READ RETURN STRING VAL VAR VOID WHILE
 %type expression
 %type<dataType> data_type
 
@@ -65,12 +66,13 @@ Symtab_list symtab_list;
 
 %%
 program:        CLASS ID
-                {
-                   
-                   Tuple_Identity *data = new Tuple_Identity($2, "global", type_class);
+                {                                      
+                   Node *data = new Node($2, "global", type_class);
                    symtab_list.push();
-                   symtab_list.insert_token($2, data);
+                   symtab_list.insert_token(data);
                    symtab_list.push();
+                   Node* n = symtab_list.lookup_token($2);
+                     
                 }
                '{' inside_class '}' 
                 {
@@ -101,8 +103,8 @@ inside_class:   inside_class function_choice
 
 function_choice:   FUN ID
 	           {
-                        Tuple_Identity *data = new Tuple_Identity($2, "local", type_function);
-                        symtab_list.insert_token($2, data);
+                        Node *data = new Node($2, "local", type_function);
+                        symtab_list.insert_token(data);
 			
                    }
 	           function_variation
@@ -110,7 +112,11 @@ function_choice:   FUN ID
                         symtab_list.push();
                    }
                    '{' inside_function '}'
-	           {
+	           {    
+                        if(ret == 1){   
+                           Node *data = symtab_list.lookup_token($2);
+                           data->setRet(true);
+                        }
 			Trace("Reducing to function\n");
                         symtab_list.pop();
 		   };
@@ -133,8 +139,8 @@ mul_args:   mul_args ',' sgl_args | sgl_args
 
 sgl_args:   ID ':' data_type
 	    {
-                Tuple_Identity *data = new Tuple_Identity($1, "function parameter", $3);
-                symtab_list.insert_token($1, data);
+                Node *data = new Node($1, "function parameter", $3);
+                symtab_list.insert_token(data);
 		Trace("Reducing to sgl_args\n");
             }; 
 
@@ -147,47 +153,65 @@ inside_function:   inside_function variable_choice  |
 		 	Trace("Reducing to inside_function\n");
 		   };
 
-variable_choice: VAR ID ':' data_type '=' expression  
+variable_choice: VAR ID ':' data_type '='   
 	         {
-                     Tuple_Identity *data = new Tuple_Identity($2, "local", $4);
-                     symtab_list.insert_token($2, data);
+                     Node *data = new Node($2, "local", $4);
+                     symtab_list.insert_token(data);
+                 } 
+                 expression
+                 {
+
                  }
                  | VAR ID ':' data_type  '['INT_CONST']'
                  {
-                     Tuple_Identity *data = new Tuple_Identity($2, "local", $4);
-                     symtab_list.insert_token($2, data);
+                     Node *data = new Node($2, "local", $4);
+                     symtab_list.insert_token(data);
 
-}
+                 }
                  | VAR ID ':' data_type          
                  {
-                     Tuple_Identity *data = new Tuple_Identity($2, "local", $4);
-                     symtab_list.insert_token($2, data);
+                     Node *data = new Node($2, "local", $4);
+                     symtab_list.insert_token(data);
                  }
-	         | VAR ID '=' expression 
+	         | VAR ID '='
                  {
-                     Tuple_Identity *data = new Tuple_Identity($2, "local", type_void);
-                     symtab_list.insert_token($2, data);
+                     Node *data = new Node($2, "local", type_void);
+                     symtab_list.insert_token(data);
+                 }
+                 expression
+                 {
+
                  }
 		 | VAR ID                             
 	         {
-                     Tuple_Identity *data = new Tuple_Identity($2, "local", type_void);
-                     symtab_list.insert_token($2, data);
+                     Node *data = new Node($2, "local", type_void);
+                     symtab_list.insert_token(data);
 		     Trace("Reducing to variable_choice\n");
 		 };
 
 
-constant_choice:   VAL ID ':' data_type '=' expression
+constant_choice:   VAL ID ':' data_type '=' 
 	           {
-                     Tuple_Identity *data = new Tuple_Identity($2, "local", $4);
-                     symtab_list.insert_token($2, data);
+                     Node *data = new Node($2, "local", $4);
+                     data->setConstant(true);
+                     symtab_list.insert_token(data);
                    }
-                 | VAL ID '=' expression  
-	           {
-                     Tuple_Identity *data = new Tuple_Identity($2, "local", type_void);
-                     symtab_list.insert_token($2, data);
-	             Trace("Reducing to constant_choice\n");
-	           }; 
+                   expression
+                   {
 
+                   }
+                 | VAL ID '=' 
+	           {
+                     Node *data = new Node($2, "local", type_void);
+                     data->setConstant(true);
+                     symtab_list.insert_token(data);
+	             Trace("Reducing to constant_choice\n");
+	           }
+                   expression
+                   {
+
+                   }; 
+                    
 
 
 statement_choice:    simple_statement | conditional_statement | loop_statement
@@ -196,8 +220,32 @@ statement_choice:    simple_statement | conditional_statement | loop_statement
                         Trace("Reducing to statement_choice\n");
                      };
 
-simple_statement:    call_function | ID '=' expression | PRINT print_choice |
-	             PRINTLN print_choice | RETURN expression | RETURN 
+simple_statement:    call_function 
+		   | ID
+                     {
+                         Node* data = symtab_list.lookup_token($1);
+                         if(data == NULL){yyerror("Identifier Not Fonud");
+                         }
+                         if(data->getType() == type_class || data->getType() == type_function){
+                            yyerror("Identifier is a class or function type");
+                         }
+                         if(data->getConstant()){
+                            yyerror("Val can't assign new value");
+                         }
+                     } 
+                     '=' expression
+                     {
+                         if($4->getType() == type_function  &&  !$4->getRet()){
+                            yyerror("Function no return");
+                         }
+                     }
+                   | PRINT print_choice 
+	           | PRINTLN print_choice
+                   | RETURN expression
+                     {
+                         ret = 1;
+                     }
+                   | RETURN 
                      {
                         Trace("Reducing to simple_statement\n");
                      };
@@ -211,6 +259,7 @@ print_choice:        '(' expression ')' | expression
 
 conditional_statement:  IF '(' bool_expression ')'
 		        {
+                           if_else = 1;
                            cout << "error\n";
                            symtab_list.push();
                         }
@@ -225,6 +274,10 @@ conditional_statement:  IF '(' bool_expression ')'
 
 else_choice:         ELSE
 	             {
+                         if_else -=1;
+                         if(if_else < 0){
+                            yyerror("if else syntax error");
+                         }
                          symtab_list.push();
                      }
 	             block_or_simple_conditional
@@ -258,8 +311,8 @@ loop_statement:      WHILE '(' bool_expression  ')'
                      }
                    | FOR '(' ID IN INT_CONST DD INT_CONST ')'
                      {
-                         Tuple_Identity *data = new Tuple_Identity($3, "function argument", type_integer);
-                         symtab_list.insert_token($3, data);
+                         Node *data = new Node($3, "function argument", type_integer);
+                         symtab_list.insert_token(data);
                          symtab_list.push();
                      }
                      block_or_simple_loop                    
@@ -285,7 +338,14 @@ inside_block_loop:  inside_block_loop statement_choice |
 
 
 call_function:      ID '(' check_call_function_argument ')'
-	            {Trace("Reduing to call_function");};
+	            {
+                        
+                        if(symtab_list.lookup_token($1) == NULL){
+                           yyerror("Function not found"); 
+                        }
+                        $$ = symtab_list.lookup_token($1);
+                        Trace("Reduing to call_function");
+                    };
 
 
 check_call_function_argument: comma_seperated_arguments | ;
@@ -297,11 +357,30 @@ comma_seperated_arguments: comma_seperated_arguments ',' comma_seperated_argumen
 call_function_parameter: expression;
 
 
-expression: call_function | ID | '(' expression  ')' | calculation_expression
+expression: call_function
+	    {
+                $$ = $1;
+            }
+	  | ID
+            {
+                Node* data = symtab_list.lookup_token($1);
+                if(data == NULL){ yyerror("Identifier Not Fonud");}	
+                if(data->getType() == type_class || data->getType() == type_function){
+                   yyerror("Identifier is a class or function type");
+                }
+                $$ = data;      
+            }
+	  | '(' expression  ')' | calculation_expression
 	  | bool_expression | constant_values | ID '[' INT_CONST ']'
           {Trace("Reducing to expression\n");};
 
-calculation_expression: '-' expression %prec UMINUS | expression '*' expression                      | expression '/' expression | expression '%' expression                        | expression '+' expression | expression '-' expression                      {Trace("Reducing to calculation\n");};
+calculation_expression: '-' expression %prec UMINUS | expression '*' expression                      | expression '/' expression | expression '%' expression                        | expression '+' expression
+		        {
+                            if($1->getType() !=  $3->getType()){
+                               yyerror("Both expression has different data type");
+                            }  
+                        }
+		      | expression '-' expression                      {Trace("Reducing to calculation\n");};
 
 
 bool_expression: relational_expression | logical_expression;
@@ -310,8 +389,17 @@ bool_expression: relational_expression | logical_expression;
 relational_expression:  expression '<' expression | expression LEQ expression | expression '>' expression | expression GEQ expression | expression EQ expression | expression NEQ expression;
 
 
-logical_expression:  '!' expression | expression AND expression 
-		  |  expression OR;
+logical_expression:  expression
+                     {
+                        if($1->getType() != type_bool){yyerror("Expresstion isn't bool data type");}
+                     }		 
+                     |'!' expression 
+                     {
+                        if($2->getType() != type_bool){yyerror("Expresstion isn't bool data type");}
+
+                     }
+                     | expression AND expression 
+		     |  expression OR expression;
 
 
 constant_values:         INT_CONST | REAL_CONST | BOOL_CONST | STR_CONST;
@@ -331,7 +419,8 @@ data_type:  INT    {$$ = type_integer;}
 
 void yyerror(const char *msg)
 {
-
+   printf("[ERROR]: %s\n", msg);
+   exit(0);
 }
 
 int main(int argc, char **argv)
@@ -348,4 +437,6 @@ int main(int argc, char **argv)
         yyerror("Parsing error !");
     }
     symtab_list.dump_all();
+
+
 }

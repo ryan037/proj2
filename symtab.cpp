@@ -4,16 +4,10 @@
 
 using namespace std;
 
-Tuple_Identity::Tuple_Identity()
-{}
-Tuple_Identity::Tuple_Identity(const string id, const string scope, ValueType type)
-{
-	this->id = id;
-	this->scope = scope;
-	this->type = type;
-}
 Node::Node()
 {
+	this->constant = false;
+	this->ret = false;
 	this->next = NULL;
 }
 
@@ -22,6 +16,8 @@ Node::Node(const string id, const string scope, ValueType type)
 	this->identifier = id;
 	this->scope = scope;
 	this->type = type;
+	this->constant = false;
+	this->ret = false;
 	this->next = NULL;
 }
 
@@ -48,7 +44,22 @@ Node* Node::getNext()
 {
     return this->next;
 }
-
+void Node::setConstant(bool b)
+{
+   this->constant = b;
+}
+bool Node::getConstant()
+{
+   return this->constant;
+}
+void Node::setRet(bool b)
+{
+   this->ret = b;
+}
+bool Node::getRet()
+{
+   return this->ret;
+}
 //-------------------------------------------
 SymbolTable::SymbolTable()
 {
@@ -60,7 +71,7 @@ SymbolTable* SymbolTable::creat()
   
 }
 
-bool SymbolTable::lookup(const string id)
+Node* SymbolTable::lookup(const string id)
 {
    int index = hashf(id);
    
@@ -70,17 +81,16 @@ bool SymbolTable::lookup(const string id)
       Node* n = this->symbolTable[index];	   
       while(n != NULL){
          if(n->getIdentifier() == id)
-            return true;
+            return n;
 	 n = n->next;
       }
    }
 
-   return false;
+   return NULL;
 }
-bool SymbolTable::insert(const string id, const string scope, ValueType type)
+bool SymbolTable::insert(Node* n)
 {
-   Node* n = new Node(id, scope, type); 
-   int index = hashf(id);
+   int index = hashf(n->getIdentifier());
    map<int, Node*>::iterator it = this->symbolTable.find(index);
 
    if(it == this->symbolTable.end()){
@@ -204,13 +214,23 @@ void Symtab_list::pop()
    this->cur = this->cur->getParent();
 }
 
-bool Symtab_list::lookup_token(const string id)
+Node* Symtab_list::lookup_token(const string id)
 {
-   return this->cur->lookup(id);
+   SymbolTable* temp = this->cur;  
+   while(temp != head){
+      Node* n = temp->lookup(id);
+      if(n == NULL ){
+         temp = temp->getParent();
+      }else{
+         return n;
+      }
+   }
+
+   return NULL;
 }
-bool Symtab_list::insert_token(const string id, Tuple_Identity* ti)
+bool Symtab_list::insert_token(Node* ti)
 {
-   return this->cur->insert(id, ti->scope, ti->type);
+   return this->cur->insert(ti);
 }
 void Symtab_list::dump_all()
 {

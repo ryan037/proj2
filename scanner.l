@@ -66,7 +66,6 @@ char string_revise[MAX_LINE_LENG];
 "case"  {token(CASE);}
 "class"  {token(CLASS);}
 "continue"  {token(CONTINUE);}
-"declare"  {token(DECLARE);}
 "do"  {token(DO);}
 "else"  {token(ELSE);}
 "exit"  {token(EXIT);}

@@ -11,21 +11,12 @@
 
 using namespace std;
 
-class Tuple_Identity
-{
-public:
-   string id,scope;
-   ValueType type;
-   Tuple_Identity();
-   Tuple_Identity(const string id, const string scope, ValueType type);
-
-};
-
-
 class Node {
    string identifier, scope;
    ValueType type;
    Node* next;
+   bool constant;
+   bool ret;
 public:
    Node();
    Node(const string id, const string scope, const ValueType type);
@@ -34,6 +25,10 @@ public:
    ValueType getType();
    string getScope();
    Node* getNext();
+   void setConstant(bool b);
+   void setRet(bool b);
+   bool getConstant();
+   bool getRet();
    friend class SymbolTable;
    
 };
@@ -55,8 +50,8 @@ public:
    void addChilds();
 //---------------------------------------------- 
    SymbolTable* creat();
-   bool lookup(const string id);
-   bool insert(const string id, const string scope, ValueType type);
+   Node* lookup(const string id);
+   bool insert(Node* n);
    int hashf(const string id);
    void dump();
    void dump(SymbolTable* s);
@@ -71,8 +66,8 @@ public:
    Symtab_list();
    void pop();
    void push();
-   bool lookup_token(const string id);
-   bool insert_token(const string id,  Tuple_Identity* ti);
+   Node* lookup_token(const string id);
+   bool insert_token(Node* ti);
    void dump_all();
 };
 
