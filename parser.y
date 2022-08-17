@@ -168,6 +168,16 @@ variable_choice: VAR ID ':' data_type '='
                      symtab_list.insert_token(data);
 
                  }
+                 | VAR ID ':' data_type '['ID']'
+                 {
+                    Node* n = symtab_list.lookup_token($6);
+                    if(n->getType() != type_integer){
+                        yyerror("Array argument error");        
+                    }
+                    Node *data = new Node($2, "local", $4);
+                    symtab_list.insert_token(data);
+                 }
+
                  | VAR ID ':' data_type          
                  {
                      Node *data = new Node($2, "local", $4);
