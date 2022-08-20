@@ -6,8 +6,11 @@ using namespace std;
 
 Node::Node()
 {
-	this->constant = false;
+	this->val = false;
 	this->ret = false;
+	this->constant = false;
+	this->value = 0;
+	this->func = false;
 	this->next = NULL;
 }
 
@@ -16,8 +19,11 @@ Node::Node(const string id, const string scope, ValueType type)
 	this->identifier = id;
 	this->scope = scope;
 	this->type = type;
-	this->constant = false;
+	this->val = false;
 	this->ret = false;
+	this->constant = false;
+	this->value = 0;
+        this->func = false;
 	this->next = NULL;
 }
 
@@ -44,13 +50,17 @@ Node* Node::getNext()
 {
     return this->next;
 }
-void Node::setConstant(bool b)
+void Node::setType(ValueType v)
 {
-   this->constant = b;
+   this->type = v;
 }
-bool Node::getConstant()
+void Node::setVal(bool b)
 {
-   return this->constant;
+   this->val = b;
+}
+bool Node::getVal()
+{
+   return this->val;
 }
 void Node::setRet(bool b)
 {
@@ -59,6 +69,30 @@ void Node::setRet(bool b)
 bool Node::getRet()
 {
    return this->ret;
+}
+void Node::setConstant(bool b)
+{
+   this->constant = b;
+}
+bool Node::getConstant()
+{
+   return this->constant;
+}
+void Node::setValue(int i)
+{
+   this->value = i;
+}
+int Node::getValue()
+{
+   return this->value;
+}
+void Node::setFunc(bool b)
+{
+   this->func = b;
+}
+bool Node::getFunc()
+{
+   return this->func;
 }
 //-------------------------------------------
 SymbolTable::SymbolTable()

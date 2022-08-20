@@ -5,6 +5,8 @@
 #define Trace(t)        printf(t)
 #include <cstdio>
 #include <iostream>
+#include <typeinfo>
+#include <string.h>
 #include "symtab.h"
 
 extern FILE *yyin;
@@ -17,6 +19,8 @@ Symtab_list symtab_list;
 
 int if_else = 0;
 int ret = 0;
+vector<ValueType> vt;
+vector<ValueType> vt2;
 %}
 
 %code requires{
@@ -54,8 +58,9 @@ int ret = 0;
 
 
 
-%left OR
-%left AND
+	          
+%left '|'
+%left '&'
 %left '!'
 %left '<' LEQ EQ GEQ '>' NEQ
 %left '+' '-'
@@ -104,12 +109,18 @@ inside_class:   inside_class function_choice
 function_choice:   FUN ID
 	           {
                         Node *data = new Node($2, "local", type_function);
+                        data->setFunc(true);
                         symtab_list.insert_token(data);
 			
                    }
 	           function_variation
                    {
                         symtab_list.push();
+                        Node *data = symtab_list.lookup_token($2);
+                        for(int i=0; i<vt.size(); i++){
+                           data->func_para.push_back(vt.at(i));
+                        }
+                        vt.clear();
                    }
                    '{' inside_function '}'
 	           {    
@@ -141,6 +152,7 @@ sgl_args:   ID ':' data_type
 	    {
                 Node *data = new Node($1, "function parameter", $3);
                 symtab_list.insert_token(data);
+                vt.push_back(data->getType());
 		Trace("Reducing to sgl_args\n");
             }; 
 
@@ -203,23 +215,19 @@ variable_choice: VAR ID ':' data_type '='
 constant_choice:   VAL ID ':' data_type '=' 
 	           {
                      Node *data = new Node($2, "local", $4);
-                     data->setConstant(true);
+                     data->setVal(true);
                      symtab_list.insert_token(data);
                    }
                    expression
                    {
 
                    }
-                 | VAL ID '=' 
-	           {
-                     Node *data = new Node($2, "local", type_void);
-                     data->setConstant(true);
+                 | VAL ID '=' expression
+                   {
+                     Node *data = new Node($2, "local", $4->getType());
+                     data->setVal(true);
                      symtab_list.insert_token(data);
 	             Trace("Reducing to constant_choice\n");
-	           }
-                   expression
-                   {
-
                    }; 
                     
 
@@ -239,16 +247,27 @@ simple_statement:    call_function
                          if(data->getType() == type_class || data->getType() == type_function){
                             yyerror("Identifier is a class or function type");
                          }
-                         if(data->getConstant()){
+                         if(data->getVal()){
                             yyerror("Val can't assign new value");
                          }
                      } 
                      '=' expression
-                     {
-                         if($4->getType() == type_function  &&  !$4->getRet()){
-                            yyerror("Function no return");
+                     {   
+                         if(strcmp(typeid($4).name(), "P4Node") == 0){
+                            if($4->getType() == type_function  &&  !$4->getRet()){
+                               yyerror("Function no return");
+                            }
                          }
+                         
+                         
                      }
+                   |  ID '['ID']'
+                   {
+                        Node* n = symtab_list.lookup_token($3);
+                        if(n->getType() != type_integer){
+                           yyerror("Array argument error");        
+                        }
+                   }
                    | PRINT print_choice 
 	           | PRINTLN print_choice
                    | RETURN expression
@@ -350,6 +369,16 @@ inside_block_loop:  inside_block_loop statement_choice |
 call_function:      ID '(' check_call_function_argument ')'
 	            {
                         
+                        Node* data = symtab_list.lookup_token($1);
+                        for(int i=0; i<data->func_para.size();i++){
+			   if(data->func_para.at(i) != vt2.at(i)){
+                              vt2.clear();
+                              yyerror("function argument error");
+                           }
+                        }
+                        
+                        vt2.clear();
+
                         if(symtab_list.lookup_token($1) == NULL){
                            yyerror("Function not found"); 
                         }
@@ -364,7 +393,10 @@ check_call_function_argument: comma_seperated_arguments | ;
 comma_seperated_arguments: comma_seperated_arguments ',' comma_seperated_arguments | call_function_parameter ;
 
 
-call_function_parameter: expression;
+call_function_parameter: expression
+		         {
+                           vt2.push_back($1->getType());
+                         };
 
 
 expression: call_function
@@ -380,14 +412,15 @@ expression: call_function
                 }
                 $$ = data;      
             }
-	  | '(' expression  ')' | calculation_expression
-	  | bool_expression | constant_values | ID '[' INT_CONST ']'
+	  | '(' expression  ')' | calculation_expression 
+	  | constant_values | ID '[' INT_CONST ']'
           {Trace("Reducing to expression\n");};
 
 calculation_expression: '-' expression %prec UMINUS | expression '*' expression                      | expression '/' expression | expression '%' expression                        | expression '+' expression
 		        {
-                            if($1->getType() !=  $3->getType()){
-                               yyerror("Both expression has different data type");
+                         
+                            if($1->getType() == type_bool || $3->getType() == type_bool){
+                                yyerror("bool data type can't calculate");
                             }  
                         }
 		      | expression '-' expression                      {Trace("Reducing to calculation\n");};
@@ -408,11 +441,21 @@ logical_expression:  expression
                         if($2->getType() != type_bool){yyerror("Expresstion isn't bool data type");}
 
                      }
-                     | expression AND expression 
-		     |  expression OR expression;
+                     | expression '&' expression 
+		     | expression '|' expression
+                     | relational_expression '|' relational_expression
+                     | relational_expression '&' relational_expression;
 
 
-constant_values:         INT_CONST | REAL_CONST | BOOL_CONST | STR_CONST;
+constant_values:         INT_CONST
+	                 {
+                            Node* data = new Node(); 
+                            data->setConstant(true);
+                            data->setValue($1);
+                            data->setType(type_integer);
+                            $$ = data;
+                         }
+                       | REAL_CONST | BOOL_CONST | STR_CONST;
 	                
 
 

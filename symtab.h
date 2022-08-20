@@ -15,9 +15,13 @@ class Node {
    string identifier, scope;
    ValueType type;
    Node* next;
-   bool constant;
+   bool val;
    bool ret;
+   bool constant;
+   bool func;
+   int value;
 public:
+   vector<ValueType> func_para;
    Node();
    Node(const string id, const string scope, const ValueType type);
    void Node_print();
@@ -25,10 +29,18 @@ public:
    ValueType getType();
    string getScope();
    Node* getNext();
-   void setConstant(bool b);
+   void setType(ValueType v);
+   void setVal(bool b);
    void setRet(bool b);
-   bool getConstant();
+   void setConstant(bool b);
+   void setValue(int v);
+   void setFunc(bool b);
+   bool getVal();
    bool getRet();
+   bool getConstant();
+   int  getValue();
+   bool getFunc();
+
    friend class SymbolTable;
    
 };
