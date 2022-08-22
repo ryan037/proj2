@@ -12,6 +12,8 @@ Node::Node()
 	this->value = 0;
 	this->func = false;
 	this->next = NULL;
+	this->ret_type = type_void;
+	this->num = 0;
 }
 
 Node::Node(const string id, const string scope, ValueType type)
@@ -25,6 +27,9 @@ Node::Node(const string id, const string scope, ValueType type)
 	this->value = 0;
         this->func = false;
 	this->next = NULL;
+	this->ret_type = type_void;
+	this->num = 0;
+
 }
 
 
@@ -42,10 +47,15 @@ ValueType Node::getType()
 {
    return this->type;
 }
+void Node::setScope(string s)
+{
+   this->scope = s;
+}
 string Node::getScope()
 {
    return this->scope;
 }
+
 Node* Node::getNext()
 {
     return this->next;
@@ -93,6 +103,22 @@ void Node::setFunc(bool b)
 bool Node::getFunc()
 {
    return this->func;
+}
+void Node::setRet_type(ValueType v)
+{
+   this->ret_type = v;
+}
+ValueType Node::getRet_type()
+{
+   return this->ret_type;
+}
+void Node::setNum(int n)
+{
+   this->num = n;
+}
+int Node::getNum()
+{
+   return this->num;
 }
 //-------------------------------------------
 SymbolTable::SymbolTable()

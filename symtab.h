@@ -14,12 +14,14 @@ using namespace std;
 class Node {
    string identifier, scope;
    ValueType type;
+   ValueType ret_type;
    Node* next;
    bool val;
    bool ret;
    bool constant;
    bool func;
    int value;
+   int num;
 public:
    vector<ValueType> func_para;
    Node();
@@ -27,20 +29,26 @@ public:
    void Node_print();
    string getIdentifier();
    ValueType getType();
+   ValueType getRet_type();
    string getScope();
    Node* getNext();
+   
+   void setScope(string s);
    void setType(ValueType v);
    void setVal(bool b);
    void setRet(bool b);
    void setConstant(bool b);
    void setValue(int v);
    void setFunc(bool b);
+   void setRet_type(ValueType v);
+   void setNum(int n);
+
    bool getVal();
    bool getRet();
    bool getConstant();
    int  getValue();
    bool getFunc();
-
+   int getNum();
    friend class SymbolTable;
    
 };

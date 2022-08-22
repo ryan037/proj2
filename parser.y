@@ -8,6 +8,7 @@
 #include <typeinfo>
 #include <string.h>
 #include "symtab.h"
+#include "gen.h"
 
 extern FILE *yyin;
 extern char *yytext;
@@ -15,10 +16,13 @@ extern char *yytext;
 extern int yylex(void);
 static void  yyerror(const char *msg);
 Symtab_list symtab_list;
-
+Generator gen;
 
 int if_else = 0;
 int ret = 0;
+bool global_flag = true;
+int count = 0;
+string class_name;
 vector<ValueType> vt;
 vector<ValueType> vt2;
 %}
@@ -45,7 +49,7 @@ vector<ValueType> vt2;
 %token BOOL BREAK CHAR CASE CLASS CONTINUE DO ELSE EXIT FLOAT FOR FUN IF IN INT LOOP PRINT PRINTLN READ RETURN STRING VAL VAR VOID WHILE
 %type expression
 %type<dataType> data_type
-
+%type<dataType> function_variation
 
 %token <int_dataType> INT_CONST
 %token <double_dataType> REAL_CONST
@@ -71,7 +75,9 @@ vector<ValueType> vt2;
 
 %%
 program:        CLASS ID
-                {                                      
+                { 
+                   class_name = $2;  
+                   gen.beginProgram($2);     				   
                    Node *data = new Node($2, "global", type_class);
                    symtab_list.push();
                    symtab_list.insert_token(data);
@@ -81,9 +87,10 @@ program:        CLASS ID
                 }
                '{' inside_class '}' 
                 {
-                   Trace("Reducing to program\n");
+                   //Trace("Reducing to program\n");
                    symtab_list.pop();
                    symtab_list.pop();
+                   gen.closeProgram();
                 };
                 
 
@@ -102,58 +109,74 @@ inside_class:   inside_class function_choice
               | 
         	{
                          
-			Trace("Reducing to inside_class\n");
+			//Trace("Reducing to inside_class\n");
 		};
                 
 
 function_choice:   FUN ID
 	           {
+                        count = 0;
+                        global_flag = false;
                         Node *data = new Node($2, "local", type_function);
                         data->setFunc(true);
                         symtab_list.insert_token(data);
-			
+                        symtab_list.push();
                    }
 	           function_variation
                    {
-                        symtab_list.push();
                         Node *data = symtab_list.lookup_token($2);
                         for(int i=0; i<vt.size(); i++){
                            data->func_para.push_back(vt.at(i));
                         }
+                        data->setRet_type($4);
                         vt.clear();
+                        gen.beginFun(data);
                    }
                    '{' inside_function '}'
 	           {    
+                        Node *data = symtab_list.lookup_token($2);
                         if(ret == 1){   
-                           Node *data = symtab_list.lookup_token($2);
                            data->setRet(true);
                         }
-			Trace("Reducing to function\n");
+			//Trace("Reducing to function\n");
                         symtab_list.pop();
+                        gen.returnValue(data->getRet_type());
+                        count = 0; // 離開函式重設count
 		   };
 
 
-function_variation: '(' mul_args  ')' ':' data_type | 
-		    '('  ')' ':' data_type          |
-                    '(' mul_args  ')'               |
-                    '(' ')'                  
+function_variation: '(' mul_args  ')' ':' data_type 
+		    {
+                         $$ = $5;
+                    } 
+                  | '('  ')' ':' data_type    
                     {
-			Trace("Reducing to function_variation\n");
+			 $$ = $4;
+		    }
+                  | '(' mul_args  ')' 
+		    {
+			 $$ = type_void;
+		    }     
+	          | '(' ')'                  
+                    {
+                         $$ = type_void;
+			 //Trace("Reducing to function_variation\n");
 		    };
 
 
 mul_args:   mul_args ',' sgl_args | sgl_args
             {
-		Trace("Reducing to mul_args\n");
+		//Trace("Reducing to mul_args\n");
             };	
 
 
 sgl_args:   ID ':' data_type
 	    {
                 Node *data = new Node($1, "function parameter", $3);
+                data->setNum(count++);
                 symtab_list.insert_token(data);
                 vt.push_back(data->getType());
-		Trace("Reducing to sgl_args\n");
+		//Trace("Reducing to sgl_args\n");
             }; 
 
 
@@ -162,7 +185,7 @@ inside_function:   inside_function variable_choice  |
                    inside_function statement_choice |
                  
 		   {
-		 	Trace("Reducing to inside_function\n");
+		 	//Trace("Reducing to inside_function\n");
 		   };
 
 variable_choice: VAR ID ':' data_type '='   
@@ -172,7 +195,17 @@ variable_choice: VAR ID ':' data_type '='
                  } 
                  expression
                  {
-
+                    Node* data = symtab_list.lookup_token($2);
+                     if($7->getConstant()){
+                        data->setValue($7->getValue());
+                     }
+                     if(global_flag){
+                        gen.globalVarValue(data);
+                        data->setScope("global");
+                     }else{
+                        data->setNum(count++);
+                        gen.localVarValue(data);
+                     }
                  }
                  | VAR ID ':' data_type  '['INT_CONST']'
                  {
@@ -194,6 +227,12 @@ variable_choice: VAR ID ':' data_type '='
                  {
                      Node *data = new Node($2, "local", $4);
                      symtab_list.insert_token(data);
+                     if(global_flag){
+                        gen.globalVar(data);
+                        data->setScope("global");
+                     }else{
+                        data->setNum(count++);
+                     }
                  }
 	         | VAR ID '='
                  {
@@ -202,13 +241,25 @@ variable_choice: VAR ID ':' data_type '='
                  }
                  expression
                  {
-
+                    Node* data = symtab_list.lookup_token($2);
+                     if($5->getConstant()){
+                        data->setValue($5->getValue());
+                     }
+                     if(global_flag){
+                        gen.globalVarValue(data);
+                        data->setScope("global");
+                     }else{
+                        data->setNum(count++);
+                        gen.localVarValue(data);
+                     }
                  }
+                 
 		 | VAR ID                             
 	         {
                      Node *data = new Node($2, "local", type_void);
+                     data->setNum(count++);
                      symtab_list.insert_token(data);
-		     Trace("Reducing to variable_choice\n");
+		     //Trace("Reducing to variable_choice\n");
 		 };
 
 
@@ -227,7 +278,7 @@ constant_choice:   VAL ID ':' data_type '='
                      Node *data = new Node($2, "local", $4->getType());
                      data->setVal(true);
                      symtab_list.insert_token(data);
-	             Trace("Reducing to constant_choice\n");
+	             //Trace("Reducing to constant_choice\n");
                    }; 
                     
 
@@ -235,7 +286,7 @@ constant_choice:   VAL ID ':' data_type '='
 statement_choice:    simple_statement | conditional_statement | loop_statement
 		     
 		     {
-                        Trace("Reducing to statement_choice\n");
+                        //Trace("Reducing to statement_choice\n");
                      };
 
 simple_statement:    call_function 
@@ -258,8 +309,65 @@ simple_statement:    call_function
                                yyerror("Function no return");
                             }
                          }
-                         
-                         
+
+                         string output = "";
+ 
+                         if($4->getConstant() || $4->getVal()){ // constant Val
+                             if($4->getType() == type_integer){
+                                output += "sipush ";
+                                output += to_string($4->getValue());
+                             }                        
+                             else if($4->getType() == type_bool){
+                                if($4->getValue() == 1)
+                                   output += "iconst_1";      
+                                else
+                                   output += "iconst_0";      
+                             }
+                             output += "\n";
+                         }                        
+                         else{                  //variable
+                            if($4->getScope() == "global"){ //global
+                                output += "getstatic ";                                                        if($4->getType() == type_integer) //int
+				{
+   				    output += "int ";
+				}else if($4->getType() == type_bool){ //bool
+                                    output += "bool ";
+                                }
+                                    output += class_name;
+                                    output += ".";
+                                    output += $4->getIdentifier();
+                            }else if($4->getScope() == "local"){ //local
+                                   output += "iload ";
+                                   output += to_string($4->getNum());
+                            }
+                            output += "\n";       
+                         }
+                         gen.identifier(output);
+                         //--------------------------------------------
+                         output = "";                         
+                         Node* data = symtab_list.lookup_token($1); 
+                         if(data->getScope() == "global"){
+                                output += "putstatic ";
+                                if(data->getType() == type_integer) //int
+				{
+   				    output += "int ";
+				}else if(data->getType() == type_bool){ //bool
+                                    output += "bool ";
+                                }
+                                    output += class_name;
+                                    output += ".";
+                                    output += data->getIdentifier();
+                                    output += "\n";       
+                         }else if($4->getScope() == "local"){ //local
+                                output += "istore ";
+                                output += to_string(data->getNum());
+                                output += "\n";       
+                         }
+                         gen.assign(output); 
+                         if(data->getType() != $4->getType()){
+                                yyerror("Identifier and expression has different data type");
+                         }	 
+                        
                      }
                    |  ID '['ID']'
                    {
@@ -276,13 +384,13 @@ simple_statement:    call_function
                      }
                    | RETURN 
                      {
-                        Trace("Reducing to simple_statement\n");
+                        //Trace("Reducing to simple_statement\n");
                      };
 
 
 print_choice:        '(' expression ')' | expression
 	             {
-		        Trace("Reducing to print_choice\n");
+		        //Trace("Reducing to print_choice\n");
 		     };
 
 
@@ -298,7 +406,7 @@ conditional_statement:  IF '(' bool_expression ')'
                         }
 		        else_choice
 		        {
-                            Trace("Reducing to conditional_statement\n");		               };
+                           /* Trace("Reducing to conditional_statement\n");*/		               };
 
 
 else_choice:         ELSE
@@ -315,19 +423,19 @@ else_choice:         ELSE
                      }
                      | 
 	             {
-			Trace("Reducing to conditional_statement\n");
+			//Trace("Reducing to conditional_statement\n");
 		     };
 
 
 block_or_simple_conditional: '{' inside_block_conditional '}' | statement_choice
                              {
-                           Trace("Reducing to block_or_simple_condidtional\n");
+                           //Trace("Reducing to block_or_simple_condidtional\n");
                              };
 
 
 inside_block_conditional:    inside_block_conditional statement_choice |                                    inside_block_conditional constant_choice  |		                           inside_block_conditional variable_choice  | 
 			     {
-                             Trace("Reducing to inside_block_conditional\n");
+                             //Trace("Reducing to inside_block_conditional\n");
                              };
 
 loop_statement:      WHILE '(' bool_expression  ')'
@@ -347,14 +455,14 @@ loop_statement:      WHILE '(' bool_expression  ')'
                      block_or_simple_loop                    
                      {
                         symtab_list.pop();
-			Trace("Reducing to loop_statement\n");
+			//Trace("Reducing to loop_statement\n");
 		     };
 
 
 block_or_simple_loop: '{' inside_block_loop  '}' | statement_choice |
 		       BREAK | CONTINUE
                       {
-		         	Trace("Reducing to block_or_simple_loop\n");
+		         //	Trace("Reducing to block_or_simple_loop\n");
                       };
 
 
@@ -363,7 +471,7 @@ inside_block_loop:  inside_block_loop statement_choice |
                     inside_block_loop constant_choice  |
 	       	    inside_block_loop BREAK            | 
 	       	    inside_block_loop CONTINUE         |
-                    {Trace("Reducing to inside_block_loop\n");};
+                    {/*Trace("Reducing to inside_block_loop\n");*/};
 
 
 call_function:      ID '(' check_call_function_argument ')'
@@ -383,7 +491,7 @@ call_function:      ID '(' check_call_function_argument ')'
                            yyerror("Function not found"); 
                         }
                         $$ = symtab_list.lookup_token($1);
-                        Trace("Reduing to call_function");
+                        //Trace("Reduing to call_function");
                     };
 
 
@@ -414,7 +522,7 @@ expression: call_function
             }
 	  | '(' expression  ')' | calculation_expression 
 	  | constant_values | ID '[' INT_CONST ']'
-          {Trace("Reducing to expression\n");};
+          {/*Trace("Reducing to expression\n"); */};
 
 calculation_expression: '-' expression %prec UMINUS | expression '*' expression                      | expression '/' expression | expression '%' expression                        | expression '+' expression
 		        {
@@ -423,7 +531,7 @@ calculation_expression: '-' expression %prec UMINUS | expression '*' expression 
                                 yyerror("bool data type can't calculate");
                             }  
                         }
-		      | expression '-' expression                      {Trace("Reducing to calculation\n");};
+		      | expression '-' expression                     {/*Trace("Reducing to calculation\n");*/};
 
 
 bool_expression: relational_expression | logical_expression;
@@ -455,7 +563,19 @@ constant_values:         INT_CONST
                             data->setType(type_integer);
                             $$ = data;
                          }
-                       | REAL_CONST | BOOL_CONST | STR_CONST;
+                       | REAL_CONST 
+                       | BOOL_CONST
+                         {
+                            Node* data = new Node(); 
+                            data->setConstant(true);
+                            if($1 == true)
+                               data->setValue(1);
+                            else
+                               data->setValue(0);
+                            data->setType(type_bool);
+                            $$ = data;
+                         }
+                       | STR_CONST;
 	                
 
 
@@ -484,12 +604,13 @@ int main(int argc, char **argv)
         exit(1);
     }
     yyin = fopen(argv[1], "r");         /* open input file */
-
+   // gen.fp = fopen("test.txt","w");
     /* perform parsing */
     if (yyparse() == 1){                
         yyerror("Parsing error !");
     }
     symtab_list.dump_all();
+    //fclose(gen.fp);
 
 
 }

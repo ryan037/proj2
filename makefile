@@ -1,8 +1,8 @@
 
 
 
-compiler:  y.tab.o lex.yy.o  symtab.o 
-	g++ lex.yy.o y.tab.o  symtab.o 
+compiler:  y.tab.o lex.yy.o  symtab.o gen.o
+	g++ lex.yy.o y.tab.o  symtab.o gen.o
 
 y.tab.cpp: parser.y
 	bison -d -o y.tab.cpp  parser.y
@@ -18,6 +18,9 @@ lex.yy.o: lex.yy.cpp
 
 symtab.o: symtab.cpp symtab.h
 	g++ -c symtab.cpp
+
+gen.o: gen.cpp gen.h
+	g++ -c gen.cpp
 
 .PHONY: clean #fake項目
 clean:
