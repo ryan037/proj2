@@ -10,6 +10,7 @@ Node::Node()
 	this->ret = false;
 	this->constant = false;
 	this->value = 0;
+	this->value_string ="";
 	this->func = false;
 	this->next = NULL;
 	this->ret_type = type_void;
@@ -25,6 +26,7 @@ Node::Node(const string id, const string scope, ValueType type)
 	this->ret = false;
 	this->constant = false;
 	this->value = 0;
+	this->value_string ="";
         this->func = false;
 	this->next = NULL;
 	this->ret_type = type_void;
@@ -95,6 +97,14 @@ void Node::setValue(int i)
 int Node::getValue()
 {
    return this->value;
+}
+void Node::setValue_string(string s)
+{
+   this->value_string = s;
+}
+string Node::getValue_string()
+{
+   return this->value_string;
 }
 void Node::setFunc(bool b)
 {

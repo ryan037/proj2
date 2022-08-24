@@ -22,6 +22,7 @@ class Node {
    bool func;
    int value;
    int num;
+   string value_string;
 public:
    vector<ValueType> func_para;
    Node();
@@ -39,14 +40,17 @@ public:
    void setRet(bool b);
    void setConstant(bool b);
    void setValue(int v);
+   void setValue_string(string s);
    void setFunc(bool b);
    void setRet_type(ValueType v);
    void setNum(int n);
+
 
    bool getVal();
    bool getRet();
    bool getConstant();
    int  getValue();
+   string  getValue_string();
    bool getFunc();
    int getNum();
    friend class SymbolTable;

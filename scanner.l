@@ -11,12 +11,12 @@ string      \"([^\"\n]|\"\")*\"
 #include "symtab.h"
 #include "y.tab.hpp"
 #define LIST     strcat(buf,yytext)
-#define token(t) {LIST; printf("<%s>\n", #t);  return(t);}                     
-#define tokenInteger(t,i) {LIST; printf("<%s: %d>\n",#t,atoi(i)); \
+#define token(t) {LIST; /*printf("<%s>\n", #t);*/  return(t);}                     
+#define tokenInteger(t,i) {LIST; /*printf("<%s: %d>\n",#t,atoi(i));*/ \
                           yylval.int_dataType = atoi(i); return(t);}
-#define tokenFloat(t,i) {LIST; printf("<%s: %f>\n",#t,atof(i));     \
+#define tokenFloat(t,i) {LIST;/* printf("<%s: %f>\n",#t,atof(i)); */    \
                          yylval.double_dataType = atof(i); return(t);} 
-#define tokenString(t,s) {LIST; printf("<%s: %s>\n",#t,s); return(t);} 
+#define tokenString(t,s) {LIST;/* printf("<%s: %s>\n",#t,s);*/ return(t);} 
 #define MAX_LINE_LENG 256
 int linenum = 1;
 char buf[MAX_LINE_LENG];
@@ -116,7 +116,7 @@ char string_revise[MAX_LINE_LENG];
         for(int i=0; i<strlen(buf); i++){
             if(buf[i] == '\n'){   
                string_revise[idx] = '\0';
-               printf("%d: %s\n", linenum++, string_revise);
+        //       printf("/*%d: %s*/\n", linenum++, string_revise);
                idx=0;
             }
             else
@@ -132,8 +132,8 @@ char string_revise[MAX_LINE_LENG];
 
 .       {
         LIST;
-        printf("%d:%s\n", linenum+1, buf);
-        printf("bad character:'%s'\n",yytext);
+        //printf("/*%d:%s*/\n", linenum+1, buf);
+       // printf("bad character:'%s'\n",yytext);
         exit(-1);
         }
 
