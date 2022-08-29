@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include "symtab.h"
@@ -7,8 +8,10 @@ using namespace std;
 class Generator{
 public:
    Generator();
-   FILE* fp;
+   fstream file;
+   int in_block = 0;
 
+   void print_t();
    void expression_handle(Node* data, string class_name);
 
    void beginProgram(string s);
@@ -30,4 +33,12 @@ public:
    void negativeIint(string s);
    void callFun(string s, Node* data);
    void operation(string s);
+
+   void beginWhile(int i);
+   void insideWhile(int i);
+   void closeWhile(int i);
+
+   void beginFor(string s ,int i);
+   void insideFor(string s ,int i);
+   void closeFor(string s ,int i);
 };

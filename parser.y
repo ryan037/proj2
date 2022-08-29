@@ -22,6 +22,7 @@ int if_else = 0;
 int ret = 0;
 bool global_flag = true;
 bool operation_flag = false;
+int in_if_else_cout = 0;
 int count = 0;
 int L_count = 0;
 string class_name;
@@ -79,13 +80,13 @@ vector<ValueType> vt2;
 program:        CLASS ID
                 { 
                    class_name = $2;  
-                   gen.beginProgram($2);     				   
+                   gen.beginProgram($2);     			
+                   gen.in_block += 1;	   
                    Node *data = new Node($2, "global", type_class);
                    symtab_list.push();
                    symtab_list.insert_token(data);
                    symtab_list.push();
                    Node* n = symtab_list.lookup_token($2);
-                     
                 }
                '{' inside_class '}' 
                 {
@@ -93,6 +94,7 @@ program:        CLASS ID
                    symtab_list.pop();
                    symtab_list.pop();
                    gen.closeProgram();
+                   gen.in_block -= 1;	   
                 };
                 
 
@@ -117,7 +119,6 @@ inside_class:   inside_class function_choice
 
 function_choice:   FUN ID
 	           {
-                        count = 0;
                         global_flag = false;
                         Node *data = new Node($2, "local", type_function);
                         data->setFunc(true);
@@ -133,6 +134,7 @@ function_choice:   FUN ID
                         data->setRet_type($4);
                         vt.clear();
                         gen.beginFun(data);
+                        gen.in_block += 1;	   
                    }
                    '{' inside_function '}'
 	           {    
@@ -142,6 +144,7 @@ function_choice:   FUN ID
                         }
 			//Trace("Reducing to function\n");
                         symtab_list.pop();
+                        gen.in_block -= 1;	   
                         gen.returnValue(data->getRet_type());
                         count = 0; // 離開函式重設count
 		   };
@@ -309,7 +312,7 @@ simple_statement:    call_function
                                yyerror("Function no return");
                          }
                          //}
-                         if($4->getType() != type_function){
+                         if($4->getType() != type_function && !operation_flag){
                             gen.expression_handle($4, class_name);
                          }
                          //------------------------------------------------
@@ -333,6 +336,7 @@ simple_statement:    call_function
                                 output += "\n";
                          }
                          gen.assign(output);
+                         operation_flag = false;
                      }
 
                    |  ID '['ID']'
@@ -387,7 +391,7 @@ print_choice:        '(' expression ')'
 
 
 conditional_statement:  IF '(' bool_expression ')'
-		        {
+		        {  
                            gen.beginif(L_count);
                            if_else = 1;
                            symtab_list.push();
@@ -416,11 +420,12 @@ else_choice:         ELSE
                      {
                          symtab_list.pop();
                          gen.closeif(L_count);
+                       L_count+=1;
                      }
                      | 
 	             {
                          gen.closeif(L_count);
-			//Trace("Reducing to conditional_statement\n");
+                       L_count+=1;
 		     };
 
 
@@ -437,33 +442,65 @@ inside_block_conditional:    inside_block_conditional statement_choice |        
 
 loop_statement:      WHILE
 	             {
-                       gen.beginWhile();
+                       gen.beginWhile(L_count);
                        symtab_list.push();
+                       L_count+=1;
                      } 
                      '(' bool_expression  ')'
 	             {
-                       gen.insideWhile();
+                       gen.insideWhile(L_count);
+                       L_count+=2;
                      }
                      block_or_simple_loop 
                      {
-                       gen.closeWhile();
+                       gen.closeWhile(L_count);
                        symtab_list.pop();
+                       L_count+=1;
                      }
                    | FOR'(' ID IN INT_CONST 
                      {
                          Node *data = new Node($3, "function argument", type_integer);
                          symtab_list.insert_token(data);
+                         data->setNum(count);
                          symtab_list.push();
-                         gen.beginFOr();
+                         
+                         string output = "";   
+                         output+="sipush ";
+                         output+=to_string($5);
+                         output+="\nistore ";
+                         output+= to_string(data->getNum());
+                         output+= "\n";
+                         
+                         gen.beginFor(output, L_count);
+                         L_count+=1;
                      }
                      DD INT_CONST ')'
                      {
-                         gen.insdieFor();
+                         Node* data = symtab_list.lookup_token($3);
+                         string output = "";   
+                         output+="iload ";
+                         output+=to_string(data->getNum());
+                         output+="\nsipush ";
+                         output+= to_string($8);
+                         output+= "\nisub\nifel";
+                         
+                         gen.insideFor(output, L_count);
+                         L_count+=2;
                      }
                      block_or_simple_loop                    
                      {
-                         gen.closeFor();
+                         Node* data = symtab_list.lookup_token($3);
+                         string output = "";   
+                         output+="iload ";
+                         output+=to_string(data->getNum());
+                         output+="\nsipush 1";
+                         output+= "\niadd\nistore ";
+                         output+= to_string(data->getNum());
+                         output += "\n";
+               
+                         gen.closeFor(output, L_count);
                          symtab_list.pop();
+                       L_count+=1;
 			 //Trace("Reducing to loop_statement\n");
 		     };
 
@@ -530,7 +567,7 @@ expression: call_function
                 }
                 $$ = data;      
             }
-	  | '(' expression  ')' | calculation_expression 
+	  | '(' expression  ')' | calculation_expression
 	  | constant_values | ID '[' INT_CONST ']'
           {/*Trace("Reducing to expression\n"); */};
 
@@ -545,12 +582,39 @@ calculation_expression: '-' expression %prec UMINUS
                         }
                         | expression '*' expression
                         {
+                            if($1->getType() == type_bool || $3->getType() == type_bool){
+                                yyerror("bool data type can't calculate");
+                            } 
+                            operation_flag = true;
+                            gen.expression_handle($1, class_name);
+                            gen.expression_handle($3, class_name);
+                            gen.operation("imul\n");
+                            $1->setValue($1->getValue() + $3->getValue());
+                            $$ = $1;
                         }   
 		        | expression '/' expression
                         {
+                            if($1->getType() == type_bool || $3->getType() == type_bool){
+                                yyerror("bool data type can't calculate");
+                            } 
+                            operation_flag = true;
+                            gen.expression_handle($1, class_name);
+                            gen.expression_handle($3, class_name);
+                            gen.operation("idiv\n");
+                            $1->setValue($1->getValue() + $3->getValue());
+                            $$ = $1;
                         }
                         | expression '%' expression       
                         {
+                            if($1->getType() == type_bool || $3->getType() == type_bool){
+                                yyerror("bool data type can't calculate");
+                            } 
+                            operation_flag = true;
+                            gen.expression_handle($1, class_name);
+                            gen.expression_handle($3, class_name);
+                            gen.operation("irem\n");
+                            $1->setValue($1->getValue() + $3->getValue());
+                            $$ = $1;
                         }
           		| expression '+' expression
 		        {
@@ -565,7 +629,17 @@ calculation_expression: '-' expression %prec UMINUS
                             $$ = $1;
                         }
 		        | expression '-' expression        
-         	        {/*Trace("Reducing to calculation\n");*/};
+         	        {
+                            if($1->getType() == type_bool || $3->getType() == type_bool){
+                                yyerror("bool data type can't calculate");
+                            } 
+                            operation_flag = true;
+                            gen.expression_handle($1, class_name);
+                            gen.expression_handle($3, class_name);
+                            gen.operation("isub\n");
+                            $1->setValue($1->getValue() + $3->getValue());
+                            $$ = $1;
+                        };
 
 
 bool_expression: relational_expression | logical_expression;
@@ -575,33 +649,87 @@ relational_expression:  expression '<' expression
 		     {
                          gen.expression_handle($1, class_name);
                          gen.expression_handle($3, class_name);
-                         gen.relationalOperator("isub\niflt");            
+                         gen.operation("isub\n");           
+                         gen.operation("iflt");           
                      }
 		     | expression LEQ expression 
+                     {
+                         gen.expression_handle($1, class_name);
+                         gen.expression_handle($3, class_name);
+                         gen.operation("isub\n");            
+                         gen.operation("ifle");            
+                     }
                      | expression '>' expression
                      {
                          gen.expression_handle($1, class_name);
                          gen.expression_handle($3, class_name);
-                         gen.relationalOperator("isub\nifgt");            
+                         gen.operation("isub\n");            
+                         gen.operation("ifgt");            
                      }
                      | expression GEQ expression 
+                     {
+                         gen.expression_handle($1, class_name);
+                         gen.expression_handle($3, class_name);
+                         gen.operation("isub\n");            
+                         gen.operation("ifge");            
+                     }
                      | expression EQ expression 
-                     | expression NEQ expression;
+                     {
+                         gen.expression_handle($1, class_name);
+                         gen.expression_handle($3, class_name);
+                         gen.operation("isub\n");            
+                         gen.operation("ifeq");            
+                     }
+                     | expression NEQ expression
+                     {
+                         gen.expression_handle($1, class_name);
+                         gen.expression_handle($3, class_name);
+                         gen.operation("isub\n");            
+                         gen.operation("ifne");            
+                     };
 
 
 logical_expression:  expression
                      {
                         if($1->getType() != type_bool){yyerror("Expresstion isn't bool data type");}
+                        Node* temp = new Node();
+                        temp->setConstant(true);
+                        temp->setValue(1);
+                        temp->setType(type_integer);
+                        gen.expression_handle($1, class_name);
+                        gen.expression_handle(temp, class_name);
+                        gen.operation("isub\n");            
+                        gen.operation("ifeq");            
                      }		 
                      |'!' expression 
                      {
                         if($2->getType() != type_bool){yyerror("Expresstion isn't bool data type");}
-
+                        $2->setValue($2->getValue() * -1);
+                        Node* temp = new Node();
+                        temp->setConstant(true);
+                        temp->setValue(1);
+                        temp->setType(type_integer);
+                        gen.expression_handle($2, class_name);
+                        gen.expression_handle(temp, class_name);
+                        gen.operation("isub\n");            
+                        gen.operation("ifeq");            
                      }
-                     | expression '&' expression 
+                     | expression '&' expression
+                     {
+                         gen.expression_handle($1, class_name);
+                         gen.expression_handle($3, class_name);
+                         gen.operation("iand\n");            
+                         gen.operation("ifne");            
+                     }
 		     | expression '|' expression
-                     | relational_expression '|' relational_expression
-                     | relational_expression '&' relational_expression;
+                     {
+                         gen.expression_handle($1, class_name);
+                         gen.expression_handle($3, class_name);
+                         gen.operation("ior\n");            
+                         gen.operation("ifne");            
+                     }
+                     | bool_expression '|' bool_expression
+                     | bool_expression '&' bool_expression; 
 
 
 constant_values:         INT_CONST
@@ -660,13 +788,15 @@ int main(int argc, char **argv)
         exit(1);
     }
     yyin = fopen(argv[1], "r");         /* open input file */
-   // gen.fp = fopen("test.txt","w");
+    gen.file.open("test.txt",ios::out);
+    if(gen.file.fail())
+       cout << "File Fail\n";
     /* perform parsing */
     if (yyparse() == 1){                
         yyerror("Parsing error !");
     }
     symtab_list.dump_all();
-    //fclose(gen.fp);
+    
 
 
 }

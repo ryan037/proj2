@@ -1,0 +1,83 @@
+class example{
+	field static int c
+	field static int n = 5
+	field static int b = 1
+	method public static int add(int, int)
+	max_stack 15
+	max_locals 15
+	{
+		iload 0
+		iload 1
+		
+		
+		iadd
+		ireturn
+	}
+L0:
+	getstatic example.n
+	sipush 10
+	isub
+	ifle L1
+	iconst_0
+	goto L2
+L1:
+	iconst_1
+L2:
+	ifeq L3
+	getstatic example.n
+	sipush 1
+	iadd
+	putstatic example.n
+	goto L0
+L3:
+	method public static void main(java.lang.String[])
+	max_stack 15
+	max_locals 15
+	{
+		iconst_1
+		sipush 1
+		isub
+		ifeq L4
+		iconst_0
+		goto L5
+L4:
+		iconst_1
+L5:
+		ifeq L6
+		sipush 11
+		putstatic example.n
+		goto L7
+		L6:
+		sipush 12
+		putstatic example.n
+L7:
+		sipush 5
+		sipush 10
+		invokestatic int example.add(int, int)
+		putstatic int example.c
+		getstatic int example.c
+		sipush 10
+		isub
+		ifgt L8
+		iconst_0
+		goto L9
+L8:
+		iconst_1
+L9:
+		ifeq L10
+		getstatic java.io.PrintStream java.lang.System.out
+		getstatic int example.c
+		ineg
+		invokevirtual void java.io.PrintStream.print(int)
+		goto L11
+		L10:
+		getstatic java.io.PrintStream java.lang.System.out
+		getstatic int example.c
+		invokevirtual void java.io.PrintStream.print(int)
+L11:
+		getstatic java.io.PrintStream java.lang.System.out
+		ldc "Hello World"
+		invokevirtual void java.io.PrintStream.println(java.lang.String)
+		return	
+	}
+}

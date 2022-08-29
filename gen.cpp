@@ -8,10 +8,17 @@ using namespace std;
 
 Generator::Generator()
 {}
+void Generator::print_t()
+{
+   for(int i = in_block; i>0; i-- ){
+      cout << "\t";
+      file << "\t";
+   }
+}
 void Generator::expression_handle(Node* data, string class_name)
 {
-   string output = "";
-                       
+   string output = "";                   
+   
    if(data->getConstant() || data->getVal()){ // constant Val
       if(data->getType() == type_integer){
          output += "sipush ";
@@ -51,137 +58,316 @@ void Generator::expression_handle(Node* data, string class_name)
 
 void Generator::beginProgram(string s)
 { 
-   //fscanf(this->fp,"class %s", s.c_str());
+   file << "class " << s << "{" << endl; 
    cout << "class " << s << endl;
    cout << "{" << endl;
 }
 void Generator::closeProgram()
 {
+   file << "}" << endl; 
    cout << '}' << endl;
 }
 
 void Generator::beginFun(Node* data)
 {
+   print_t();
    cout << "method public static " << EnumToString(data->getRet_type()) << " " << data->getIdentifier() << '(';
+   file << "method public static " << EnumToString(data->getRet_type()) << " " << data->getIdentifier() << '(';
    if(data->getIdentifier() == "main"){
-     cout << "java.lang.Stringp[])\n";
+     cout << "java.lang.String[])\n";
+     file << "java.lang.String[])\n";
    }
    else if(data->func_para.size() == 1){
       cout << EnumToString(data->func_para[0]) << ')' << endl;
+      file << EnumToString(data->func_para[0]) << ')' << endl;
    }
    else if(data->func_para.size() > 1){
       int i=0;
       for(i=0; i<data->func_para.size()-1; i++){
          cout << EnumToString(data->func_para[i]) << ", ";
+         file << EnumToString(data->func_para[i]) << ", ";
       }
       cout << EnumToString(data->func_para[i]) << ')' << endl;
+      file << EnumToString(data->func_para[i]) << ')' << endl;
    }else{
       cout << ")" << endl; 
+      file << ")" << endl; 
    }
    //-----------------------------------------------------
-   cout << "max_stack 15" << endl << "max_locals 15" << endl << "{" << endl;
+
+   print_t();
+   cout << "max_stack 15" << endl; 
+   file << "max_stack 15" << endl; 
+   
+   print_t();
+   cout << "max_locals 15" << endl;
+   file << "max_locals 15" << endl;
+
+   print_t();
+   cout  << "{" << endl;
+   file << "{" << endl;
+
    //-----------------------------------------------------
    
    for(int i=0; i<data->func_para.size(); i++){
+          print_t();
+          print_t();
           cout << "iload " << i << endl;
+          file << "iload " << i << endl;
    }
 }
 void Generator::returnValue(ValueType v)
 {
-   if(v == type_integer)
-      cout << "ireturn" << endl << "}" << endl;
-   else if(v == type_void)
-      cout << "return" << endl << "}" << endl;
+   if(v == type_integer){
+      print_t();
+      print_t();
+      cout << "ireturn" << endl;
+      file << "ireturn" << endl;
+      print_t();
+      cout << "}" << endl;
+      file << "}" << endl;
+   }
+   else if(v == type_void){
+      print_t();
+      print_t();
+      cout << "return"; 
+      file << "return";
+      print_t();
+      cout << endl; 
+      file<< endl;
+      print_t();
+      cout<< "}" << endl;
+      file << "}" << endl;
+   }
 }
 void Generator::globalVarValue(Node* data)
 {
+   print_t();
+   file << "field static " << "int "  << data->getIdentifier() << " = "  << data->getValue() << endl;
    cout << "field static " << "int "  << data->getIdentifier() << " = "  << data->getValue() << endl;
 }
 void Generator::globalVar(Node* data)
 {
+   print_t();
    cout << "field static " <<  "int " << data->getIdentifier() << endl;
+   file << "field static " <<  "int " << data->getIdentifier() << endl;
 }
 void Generator::localVarValue(Node* data)
 {
+   print_t();
    cout << "sipush " << data->getValue() << endl;
+   file << "sipush " << data->getValue() << endl;
+   print_t();
    cout << "istore " << data->getNum() << endl;
+   file << "istore " << data->getNum() << endl;
 }
 void Generator::identifier(string s)
 {
+   print_t();
    cout << s;
+   file << s;
 }
 void Generator::assign(string s)
 {
+   print_t();
    cout << s;
+   file << s;
 }
 void Generator::printStart()
 {
+   print_t();
+   file << "getstatic java.io.PrintStream java.lang.System.out\n";
    cout << "getstatic java.io.PrintStream java.lang.System.out\n";
 }
 void Generator::printOutput(ValueType v)
 {
    if(v == type_string){
+    print_t();
+    file << "invokevirtual void java.io.PrintStream.print(java.lang.String)\n";
     cout << "invokevirtual void java.io.PrintStream.print(java.lang.String)\n";
    }
    if(v == type_integer){
+    print_t();
+    file << "invokevirtual void java.io.PrintStream.print(int)\n";
     cout << "invokevirtual void java.io.PrintStream.print(int)\n";
    }
    if(v == type_bool){
+    print_t();
+    file << "invokevirtual void java.io.PrintStream.print(boolean)\n";
     cout << "invokevirtual void java.io.PrintStream.print(boolean)\n";
    }
 }
 void Generator::printlnOutput(ValueType v)
 {
    if(v == type_string){
+    print_t();
+    file << "invokevirtual void java.io.PrintStream.println(java.lang.String)\n";
     cout << "invokevirtual void java.io.PrintStream.println(java.lang.String)\n";
    }
    if(v == type_integer){
+    print_t();
+    file << "invokevirtual void java.io.PrintStream.println(int)\n";
     cout << "invokevirtual void java.io.PrintStream.println(int)\n";
    }
    if(v == type_bool){
+    print_t();
+    file << "invokevirtual void java.io.PrintStream.println(boolean)\n";
     cout << "invokevirtual void java.io.PrintStream.println(boolean)\n";
    }
 }
 void Generator::beginif(int i)
 {
-  cout << " L" << i << "\niconst_0\n" << "goto L" << i+1 << "\nL" << i;
-  cout << ":\niconst_1\n" << "L" << i+1 << ":\nifeq L" << i+2 << endl;  
+  cout << " L" << i << endl;
+  file << " L" << i << endl;
+  print_t();
+  cout << "iconst_0" << endl;
+  file << "iconst_0" << endl;
+  print_t();
+  cout << "goto L" << i+1 << endl;
+  file << "goto L" << i+1 << endl;
+  cout << "L" << i << ":\n";
+  file << "L" << i << ":\n";
+  print_t();
+  cout << "iconst_1" << endl;
+  file << "iconst_1" << endl;
+  cout  << "L" << i+1 << ":\n";
+  file  << "L" << i+1 << ":\n";
+  print_t();
+  cout <<"ifeq L" << i+2 << endl;  
+  file <<"ifeq L" << i+2 << endl;  
 }
 void Generator::beginelse(int i)
 {
-   cout << "goto L" << i+1 << "\nL" << i << ":\n";
+   print_t();
+   cout << "goto L" << i+1 << endl;
+   file << "goto L" << i+1 << endl;
+   print_t();
+   cout<< "L" << i << ":\n";
+   file<< "L" << i << ":\n";
 }
 
 void Generator::closeif(int i)
 {
    cout << "L" << i << ":\n";
-}
-void Generator::relationalOperator(string s)
-{
-   cout << s;
+   file << "L" << i << ":\n";
 }
 void Generator::negativeIint(string s)
 {
+   print_t();
    cout << s;
+   file << s;
 }
 void Generator::callFun(string s, Node* data)
 {
+   print_t();
    cout << "invokestatic " << EnumToString(data->getRet_type()) << " " << s << "." << data->getIdentifier() << "(";
+   file << "invokestatic " << EnumToString(data->getRet_type()) << " " << s << "." << data->getIdentifier() << "(";
 
    if(data->func_para.size() == 1){
       cout << EnumToString(data->func_para[0]) << ')' << endl;
+      file << EnumToString(data->func_para[0]) << ')' << endl;
    }
    else if(data->func_para.size() > 1){
       int i=0;
       for(i=0; i<data->func_para.size()-1; i++){
          cout << EnumToString(data->func_para[i]) << ", ";
+         file << EnumToString(data->func_para[i]) << ", ";
       }
       cout <<EnumToString(data->func_para[i]) << ')' << endl;
+      file <<EnumToString(data->func_para[i]) << ')' << endl;
    }else{
       cout << ")" << endl; 
+      file << ")" << endl; 
    }
 }
 void Generator::operation(string s)
 {
+   print_t();
    cout << s;
+   file << s;
+}
+void Generator::beginWhile(int i)
+{
+   cout << "L" << i << ":\n";
+   file << "L" << i << ":\n";
+}
+void Generator::insideWhile(int i)
+{
+   cout << " L" << i << endl;
+   file << " L" << i << endl;
+   print_t();
+   cout << "iconst_0\n";
+   file << "iconst_0\n";
+   print_t();
+   cout << "goto L" << i+1 << endl;
+   file << "goto L" << i+1 << endl;
+  
+   cout << "L" << i << ":\n";
+   file << "L" << i << ":\n";
+   print_t();
+   cout << "iconst_1\n";
+   file << "iconst_1\n";
+   
+   cout << "L" << i+1 << ":\n";
+   file << "L" << i+1 << ":\n";
+   print_t();
+   cout << "ifeq L" << i+2 << endl;  
+   file << "ifeq L" << i+2 << endl;  
+}
+void Generator::closeWhile(int i)
+{
+   print_t();
+   cout << "goto L" << i-3 << endl;
+   file << "goto L" << i-3 << endl;
+   
+   cout << "L" << i << ":\n";
+   file << "L" << i << ":\n";
+}
+void Generator::beginFor(string s ,int i)
+{
+   print_t();
+   cout << s;
+   file << s;
+   print_t();
+   cout << "L" << i << ":\n";
+   file << "L" << i << ":\n";
+}
+void Generator::insideFor(string s ,int i)
+{
+   print_t();
+   cout << s;
+   file << s;
+   print_t();
+   cout << " L" << i << endl;
+   file << " L" << i << endl;
+   print_t();
+   cout << "iconst_0\n";
+   file << "iconst_0\n";
+   print_t();
+   cout << "goto L" << i+1 << endl;
+   file << "goto L" << i+1 << endl;
+   print_t();
+   cout << "L" << i << ":\n";
+   file << "L" << i << ":\n";
+   print_t();
+   cout << "iconst_1\n";
+   file << "iconst_1\n";
+   print_t();
+   cout << "L" << i+1 << ":\n";
+   file << "L" << i+1 << ":\n";
+   print_t();
+   cout << "ifeq L" << i+2 << endl;  
+   file << "ifeq L" << i+2 << endl;  
+}
+void Generator::closeFor(string s ,int i)
+{
+   print_t();
+   cout << s;
+   file << s;
+   print_t();
+   cout << "goto L" << i-3 << endl;
+   file << "goto L" << i-3 << endl;
+   print_t();
+   cout << "L" << i << ":\n";
+   file << "L" << i << ":\n";
 }
